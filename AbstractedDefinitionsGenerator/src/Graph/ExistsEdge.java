@@ -1,3 +1,7 @@
+/**
+Author: Ghadah Alghamdi
+*/
+
 package Graph;
 
 public class ExistsEdge extends Edge {

@@ -1,3 +1,7 @@
+/**
+Author: Ghadah Alghamdi
+*/
+
 package Graph;
 
 public class Def_Vertex extends Vertex {

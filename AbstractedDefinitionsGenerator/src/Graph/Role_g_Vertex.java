@@ -1,3 +1,7 @@
+/**
+Author: Ghadah Alghamdi
+*/
+
 package Graph;
 
 public class Role_g_Vertex extends Vertex {
