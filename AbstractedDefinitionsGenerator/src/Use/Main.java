@@ -128,8 +128,12 @@ public class Main {
 		OWLOntology ontology_abstract_def = manager5.createOntology();
 		
 		
+		long startTime1 = System.currentTimeMillis();
 		Map<Vertex, List<Vertex>> adjacency_list_map = toGraph.ontologyConverter(ontology_all);
 		//System.out.println("adjacency_list_map: " + adjacency_list_map);
+		long endTime1 = System.currentTimeMillis();
+		System.out.println("Total OWL-To-Graph Conversion Duration = " + (endTime1 - startTime1) + " millis");
+		
 		
 		graph.setAdjListMap(adjacency_list_map);
 		Map<Vertex, List<Vertex>> gotten_map = graph.getAdjListMap();
@@ -153,6 +157,9 @@ public class Main {
 		}
         
         graph.setRoleEdges(list_role_edges);
+        
+        long startTime21 = System.currentTimeMillis();
+
        	for(OWLClass defined_cl: sig_O.getClassesInSignature()) {
        
         		Def_Vertex DV = toGraph.getDefVertexFromClass(defined_cl);
@@ -176,6 +183,8 @@ public class Main {
         			}
         		}
         }
+       	long endTime21 = System.currentTimeMillis();
+       	System.out.println("Total Definitions Extraction Duration = " + (endTime21 - startTime21) + " millis");
         System.out.println("size of abstracted_definitions: " + abstracted_definitions.size());
         Set<OWLEquivalentClassesAxiom> entailed_abstracted_definitions = new HashSet<>();
         //validate the definitions
