@@ -161,27 +161,28 @@ public class Main {
         long startTime21 = System.currentTimeMillis();
 
        	for(OWLClass defined_cl: sig_O.getClassesInSignature()) {
-       
-        		Def_Vertex DV = toGraph.getDefVertexFromClass(defined_cl);
-        		System.out.println("current DV: " + DV);
-        		Set<OWLEquivalentClassesAxiom> equiv_of_current_defined = module_1.getEquivalentClassesAxioms(defined_cl);
-        		System.out.println("current equiv_of_current_defined: " + equiv_of_current_defined);
-        		BFS get_def = new BFS(graph);
-        		//for each DV vertex in defined_cls get the RHS
-        		graph.setVertexLhs(DV);
-        		Vertex gotten_dv = graph.getVertexLhs();
-        		System.out.println("current gotten DV: " + gotten_dv);
-        		OWLEquivalentClassesAxiom OWCA = get_def.get_abstract_def();
-        		Set<OWLSubClassOfAxiom> subof = OWCA.asOWLSubClassOfAxioms();
-        		for(OWLSubClassOfAxiom s: subof) {
-        			OWLClassExpression rhs = s.getSuperClass();
-        			if(rhs instanceof OWLObjectIntersectionOf) {
-        				Set<OWLClassExpression> conjuncts = rhs.asConjunctSet();
-        				if(!conjuncts.isEmpty()) {
-        					abstracted_definitions.add(OWCA);
-        				}
-        			}
-        		}
+       		if(isDefined(defined_cl, O){
+       			Def_Vertex DV = toGraph.getDefVertexFromClass(defined_cl);
+       			System.out.println("current DV: " + DV);
+       			Set<OWLEquivalentClassesAxiom> equiv_of_current_defined = module_1.getEquivalentClassesAxioms(defined_cl);
+       			System.out.println("current equiv_of_current_defined: " + equiv_of_current_defined);
+       			BFS get_def = new BFS(graph);
+       			//for each DV vertex in defined_cls get the RHS
+       			graph.setVertexLhs(DV);
+       			Vertex gotten_dv = graph.getVertexLhs();
+       			System.out.println("current gotten DV: " + gotten_dv);
+       			OWLEquivalentClassesAxiom OWCA = get_def.get_abstract_def();
+       			Set<OWLSubClassOfAxiom> subof = OWCA.asOWLSubClassOfAxioms();
+       			for(OWLSubClassOfAxiom s: subof) {
+       				OWLClassExpression rhs = s.getSuperClass();
+       				if(rhs instanceof OWLObjectIntersectionOf) {
+       					Set<OWLClassExpression> conjuncts = rhs.asConjunctSet();
+       					if(!conjuncts.isEmpty()) {
+       						abstracted_definitions.add(OWCA);
+       					}
+       				}
+       			}
+       		}
         }
        	long endTime21 = System.currentTimeMillis();
        	System.out.println("Total Definitions Extraction Duration = " + (endTime21 - startTime21) + " millis");

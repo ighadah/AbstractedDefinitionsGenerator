@@ -79,7 +79,7 @@ public class BFS{
 			queue.add(DV);
 			
 			while (queue.size() != 0) { 
-				Set<Vertex> check_queue_defined = new HashSet<>();
+				/*Set<Vertex> check_queue_defined = new HashSet<>();
 				Set<Vertex> check_queue_notdefined = new HashSet<>();
 				Set<Vertex> check_queue_role_group_v = new HashSet<>();
 				for(Vertex v_queue: queue) {
@@ -96,7 +96,7 @@ public class BFS{
 				
 				if(check_queue_defined.isEmpty() && check_queue_role_group_v.isEmpty()) {
 					break;
-				}
+				}*/
 				
 	            DV = queue.poll(); 
 	        		List<Vertex> adj_vertices = adjacency_list_map.get(DV);
