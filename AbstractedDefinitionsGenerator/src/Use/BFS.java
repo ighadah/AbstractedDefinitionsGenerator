@@ -384,7 +384,7 @@ public class BFS{
 		
 	}
 	
-	public List<Vertex> get_simple_types_restrictions_no_redundancies(Map<Vertex, List<Vertex>> retrictions_subsumptions, List<Vertex> existential_vertices){
+	/*public List<Vertex> get_simple_types_restrictions_no_redundancies(Map<Vertex, List<Vertex>> retrictions_subsumptions, List<Vertex> existential_vertices){
 		List<Vertex> existential_restrictions_parents = new ArrayList<>();
 		for(Map.Entry<Vertex, List<Vertex>> child_parent_entry: retrictions_subsumptions.entrySet()) {
 			List<Vertex> entry_values = child_parent_entry.getValue();
@@ -407,7 +407,90 @@ public class BFS{
 		}
 		
 		return existential_vertices_no_redundancies;
+	}*/
+	
+	
+public List<Vertex> get_simple_types_restrictions_no_redundancies(Map<Vertex, List<Vertex>> retrictions_subsumptions, List<Vertex> existential_vertices){
+		
+		//before deducing parents, clean the map retrictions_subsumptions from cycles
+		//(1)
+		Map<Vertex, List<Vertex>> retrictions_subsumptions_no_cycles = new HashMap<>();
+		List<Vertex> existential_restrictions_with_parents = new ArrayList<>(existential_vertices);
+		for(Map.Entry<Vertex, List<Vertex>> child_parent_entry: retrictions_subsumptions.entrySet()) {
+			List<Vertex> entry_values = child_parent_entry.getValue();
+			retrictions_subsumptions_no_cycles.put(child_parent_entry.getKey(), entry_values);
+			List<Vertex> entry_values_no_cycles = new ArrayList<>(entry_values);
+			for(Vertex entry_values_v: entry_values) {
+				if(entry_values_v.equals(child_parent_entry.getKey())) {
+					entry_values_no_cycles.remove(entry_values_v);
+					retrictions_subsumptions_no_cycles.replace(child_parent_entry.getKey(), entry_values_no_cycles);
+				}
+			}
+			if(entry_values.isEmpty()) {
+				existential_restrictions_with_parents.remove(child_parent_entry.getKey());
+			}
+		}
+		
+		System.out.println("retrictions_subsumptions_no_cycles: " + retrictions_subsumptions_no_cycles);
+		
+		//(2) detect equivalences
+		Map<Vertex, List<Vertex>> retrictions_subsumptions_no_equiv = detectEquivalences(retrictions_subsumptions_no_cycles);
+		
+		
+		List<Vertex> existential_restrictions_parents = new ArrayList<>();
+		for(Map.Entry<Vertex, List<Vertex>> child_parent_entry: retrictions_subsumptions_no_equiv.entrySet()) {
+			List<Vertex> entry_values = child_parent_entry.getValue();
+			for(Vertex entry_values_v: entry_values) {
+				if(!entry_values_v.toString().contains("_i_")) {
+					existential_restrictions_parents.add(entry_values_v);
+				}
+			}
+		}
+		System.out.println("the set existential_vertices:" + existential_vertices);
+		System.out.println("the existential_restrictions_parents: " + existential_restrictions_parents);
+		System.out.println("existential_restrictions_with_parents: " + existential_restrictions_with_parents);
+		
+		List<Vertex> existential_vertices_copy = new ArrayList<>(existential_vertices);
+		for(Vertex existential_vertex_parent: existential_restrictions_parents) {
+			existential_vertices_copy.remove(existential_vertex_parent);
+		}
+		List<Vertex> existential_vertices_no_redundancies = new ArrayList<>();
+		for(Vertex v: existential_vertices_copy) {
+			if(!v.toString().contains("_i_")) {
+				existential_vertices_no_redundancies.add(v);
+			}
+		}
+		
+		return existential_vertices_no_redundancies;
 	}
+
+
+//detect equivalences of elements in a hashmap (checking if the child has a parent where the parent is also a child of the parent)
+public Map<Vertex, List<Vertex>> detectEquivalences(Map<Vertex, List<Vertex>> retrictions_subsumptions_no_cycles) {
+	Map<Vertex, List<Vertex>> retrictions_subsumptions_no_equiv = new HashMap<>(retrictions_subsumptions_no_cycles);
+	for(Map.Entry<Vertex, List<Vertex>> child_parent_entry_1: retrictions_subsumptions_no_cycles.entrySet()) {
+		//get the key, and the parents of the current entry
+		Vertex child_1 = child_parent_entry_1.getKey();
+		List<Vertex> parents_1 = child_parent_entry_1.getValue();
+		for(Map.Entry<Vertex, List<Vertex>> child_parent_entry_2: retrictions_subsumptions_no_cycles.entrySet()) {
+			Vertex child_2 = child_parent_entry_2.getKey();
+			List<Vertex> parents_2 = child_parent_entry_2.getValue();
+			if(!child_1.equals(child_2)) {
+				//check if parents_1 contains child_2
+				if(parents_1.contains(child_2)) {
+					if(parents_2.contains(child_1)) {
+						//there is equivalence, in this case will
+						retrictions_subsumptions_no_equiv.replace(child_1, new ArrayList<>());
+					}
+				}
+			}
+		}
+		
+	}
+	
+	System.out.println("the retrictions_subsumptions_no_equiv without equiv: " + retrictions_subsumptions_no_equiv);
+	return retrictions_subsumptions_no_equiv;
+}
 	
 	public List<Vertex> get_nested_types_restrictions_no_redundancies(Map<Vertex, List<Vertex>> retrictions_subsumptions, List<Vertex> existential_vertices){
 		
