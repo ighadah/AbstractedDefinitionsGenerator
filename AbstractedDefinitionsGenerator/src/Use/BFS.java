@@ -445,7 +445,7 @@ public List<Vertex> get_simple_types_restrictions_no_redundancies(Map<Vertex, Li
 		}
 		System.out.println("the set existential_vertices:" + existential_vertices);
 		System.out.println("the existential_restrictions_parents: " + existential_restrictions_parents);
-		
+	
 		List<Vertex> existential_vertices_copy = new ArrayList<>(existential_vertices);
 		for(Vertex existential_vertex_parent: existential_restrictions_parents) {
 			existential_vertices_copy.remove(existential_vertex_parent);
