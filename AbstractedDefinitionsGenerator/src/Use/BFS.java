@@ -415,7 +415,6 @@ public List<Vertex> get_simple_types_restrictions_no_redundancies(Map<Vertex, Li
 		//before deducing parents, clean the map retrictions_subsumptions from cycles
 		//(1)
 		Map<Vertex, List<Vertex>> retrictions_subsumptions_no_cycles = new HashMap<>();
-		//List<Vertex> existential_restrictions_with_parents = new ArrayList<>(existential_vertices);
 		for(Map.Entry<Vertex, List<Vertex>> child_parent_entry: retrictions_subsumptions.entrySet()) {
 			List<Vertex> entry_values = child_parent_entry.getValue();
 			retrictions_subsumptions_no_cycles.put(child_parent_entry.getKey(), entry_values);
@@ -426,7 +425,7 @@ public List<Vertex> get_simple_types_restrictions_no_redundancies(Map<Vertex, Li
 					retrictions_subsumptions_no_cycles.replace(child_parent_entry.getKey(), entry_values_no_cycles);
 				}
 			}
-			
+		
 		}
 		
 		System.out.println("retrictions_subsumptions_no_cycles: " + retrictions_subsumptions_no_cycles);
