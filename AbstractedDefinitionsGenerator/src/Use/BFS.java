@@ -415,7 +415,7 @@ public List<Vertex> get_simple_types_restrictions_no_redundancies(Map<Vertex, Li
 		//before deducing parents, clean the map retrictions_subsumptions from cycles
 		//(1)
 		Map<Vertex, List<Vertex>> retrictions_subsumptions_no_cycles = new HashMap<>();
-		List<Vertex> existential_restrictions_with_parents = new ArrayList<>(existential_vertices);
+		//List<Vertex> existential_restrictions_with_parents = new ArrayList<>(existential_vertices);
 		for(Map.Entry<Vertex, List<Vertex>> child_parent_entry: retrictions_subsumptions.entrySet()) {
 			List<Vertex> entry_values = child_parent_entry.getValue();
 			retrictions_subsumptions_no_cycles.put(child_parent_entry.getKey(), entry_values);
@@ -426,9 +426,7 @@ public List<Vertex> get_simple_types_restrictions_no_redundancies(Map<Vertex, Li
 					retrictions_subsumptions_no_cycles.replace(child_parent_entry.getKey(), entry_values_no_cycles);
 				}
 			}
-			if(entry_values.isEmpty()) {
-				existential_restrictions_with_parents.remove(child_parent_entry.getKey());
-			}
+		
 		}
 		
 		System.out.println("retrictions_subsumptions_no_cycles: " + retrictions_subsumptions_no_cycles);
@@ -448,7 +446,6 @@ public List<Vertex> get_simple_types_restrictions_no_redundancies(Map<Vertex, Li
 		}
 		System.out.println("the set existential_vertices:" + existential_vertices);
 		System.out.println("the existential_restrictions_parents: " + existential_restrictions_parents);
-		System.out.println("existential_restrictions_with_parents: " + existential_restrictions_with_parents);
 		
 		List<Vertex> existential_vertices_copy = new ArrayList<>(existential_vertices);
 		for(Vertex existential_vertex_parent: existential_restrictions_parents) {
