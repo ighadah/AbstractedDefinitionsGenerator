@@ -526,12 +526,10 @@ public Map<Vertex, List<Vertex>> detectEquivalences(Map<Vertex, List<Vertex>> re
 			existential_vertices_indices_list.add(vertices_indices_entry);
 		}
 		
-		List<Entry<Integer, List<Vertex>>> existential_vertices_indices_no_redundancies = new ArrayList<>();
 		Map<Integer, Boolean> existential_vertices_indices_flags = new HashMap<>();
 		for(Integer index: existential_vertices_indices.keySet()) {
 			existential_vertices_indices_flags.put(index, true);
 		}
-		//Graph graph = new Graph();
 		List<Edge> role_edges = graph.getRoleEdges();
 		for(int i = 0; i < existential_vertices_indices_list.size(); i++) {
 			Entry<Integer, List<Vertex>> entry_1 = existential_vertices_indices_list.get(i);
@@ -614,13 +612,10 @@ public Map<Vertex, List<Vertex>> detectEquivalences(Map<Vertex, List<Vertex>> re
 		for(Map.Entry<Integer, List<Vertex>> exist_vertices_indices_entry :existential_vertices_indices.entrySet()) {
 			Integer key = exist_vertices_indices_entry.getKey();
 			if(existential_vertices_indices_flags.get(key)) {
-				existential_vertices_indices_no_redundancies.add(exist_vertices_indices_entry);
+				nested_types_restrictions_no_redundancies.addAll(exist_vertices_indices_entry.getValue());
 			}
 		}
-		for(Entry<Integer, List<Vertex>> values_entry: existential_vertices_indices_no_redundancies) {
-			nested_types_restrictions_no_redundancies.addAll(values_entry.getValue());
-		}
-	
+		
 		return nested_types_restrictions_no_redundancies;
 		
 	}
