@@ -51,6 +51,7 @@ import org.semanticweb.owlapi.util.InferredSubClassAxiomGenerator;
 import Converter.ToGraph;
 import Graph.Def_Vertex;
 import Graph.Edge;
+import Graph.NDef_Vertex;
 import Graph.Vertex;
 
 import uk.ac.manchester.cs.owlapi.modularity.SyntacticLocalityModuleExtractor;
@@ -160,9 +161,9 @@ public class Main {
         
         long startTime21 = System.currentTimeMillis();
 
-       	for(OWLClass defined_cl: sig_O.getClassesInSignature()) {
-       		if(isDefined(defined_cl, O){
-       			Def_Vertex DV = toGraph.getDefVertexFromClass(defined_cl);
+       	for(OWLClass cl: sig_O.getClassesInSignature()) {
+       		if(isDefined(cl, O){
+       			Def_Vertex DV = toGraph.getDefVertexFromClass(cl);
        			System.out.println("current DV: " + DV);
        			Set<OWLEquivalentClassesAxiom> equiv_of_current_defined = module_1.getEquivalentClassesAxioms(defined_cl);
        			System.out.println("current equiv_of_current_defined: " + equiv_of_current_defined);
@@ -182,6 +183,18 @@ public class Main {
        					}
        				}
        			}
+       		}//if the concept is primitive then get the immediate adjacent vertices
+       		if(!isDefined(cl, O)) {
+       			NDef_Vertex NDV = toGraph.getNDefVertexFromClass(cl);
+       			System.out.println("current NDV: " + NDV);
+       			Set<OWLSubClassOfAxiom> subof_ax = module_1.getSubClassAxiomsForSubClass(cl);
+       			System.out.println("current subof_ax: " + subof_ax);
+       			BFS get_sub = new BFS(graph);
+       			graph.setVertexLhs(NDV);
+       			Vertex gotten_ndv = graph.getVertexLhs();
+       			System.out.println("current gotten NDV: " + gotten_ndv);
+       			OWLSubClassOfAxiom owl_subof = get_sub.get_subof_ax();
+       			System.out.println("the converted owl_subof is: " + owl_subof);
        		}
         }
        	long endTime21 = System.currentTimeMillis();
@@ -203,8 +216,6 @@ public class Main {
         
         OutputStream os_onto_witness_1 = new FileOutputStream(sig_file + "-abstract_def_newclass-3-2017.owl");
 		manager5.saveOntology(ontology_abstract_def, new FunctionalSyntaxDocumentFormat(), os_onto_witness_1);
-		
-		
         }
 	
 	

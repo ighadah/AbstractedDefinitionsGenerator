@@ -18,6 +18,7 @@ import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLEquivalentClassesAxiom;
 import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
+import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
 
 import Graph.Def_Vertex;
 import Graph.Edge;
@@ -51,6 +52,33 @@ public class BFS{
 		List<Vertex> exist_restrictions_no_redundancies = remove_redundant_exist_restrictions(existential_vertices, adjacency_list_map);
 		return getOWLDefinition(starting_vertex, primitive_concepts_no_redundancies, exist_restrictions_no_redundancies);
 		}
+	
+	//Get adjacent vertices to primitive concepts
+	public OWLSubClassOfAxiom get_subof_ax() {
+		Map<Vertex, List<Vertex>> adjacency_list_map = graph.getAdjListMap();
+		Vertex starting_vertex = graph.getVertexLhs();
+		List<Vertex> adjacent_vertices = get_immediate_adjacent_vertices(starting_vertex, adjacency_list_map);
+		System.out.println("the adjacent_vertices: " + adjacent_vertices);
+		return getOWLSubClassOfAxiom(starting_vertex, adjacent_vertices);
+	}
+	
+	
+	
+	//get parents (adjacent vertices)
+	public List<Vertex> get_immediate_adjacent_vertices(Vertex starting_vertex, Map<Vertex, List<Vertex>> adjacency_list_map){
+		Vertex lhs_v = starting_vertex;
+		Vertex DV = lhs_v;
+		for(Vertex v: adjacency_list_map.keySet()) {
+			//System.out.println("0 current key vertex inside map of adj. lists: " + v);
+			if(v.toString().equals(lhs_v.toString())) {
+				//System.out.println("the current vertex is equal to input: " + v);
+				DV = v;
+			}
+			
+		}
+		List<Vertex> adjacent_vertices = adjacency_list_map.get(DV);
+		return adjacent_vertices;
+	}
 	
 	//BFS_1 takes only one vertex (the starting vertex to begin the search for the primitive concepts and existential restrictions)
 		//BFS_2 takes list of vertices to remove the subsumption relations between primitive vertices and existential vertices
@@ -701,6 +729,98 @@ public Map<Vertex, List<Vertex>> detectEquivalences(Map<Vertex, List<Vertex>> re
 		conjuncts_set.addAll(obsv_set);
 		OWLEquivalentClassesAxiom abstract_def = toOWL.getOWLDefinition(cl_lhs, conjuncts_set);		
 		return abstract_def;
+		
+	}
+	
+	
+	public OWLSubClassOfAxiom getOWLSubClassOfAxiom(Vertex lhs_v, List<Vertex> adjacent_vertices) {
+		ToOWL toOWL = new ToOWL();
+		System.out.println("lhs_v: " + lhs_v);
+		OWLClass cl_lhs = toOWL.getOwlClassFromVertex(lhs_v);
+		Set<OWLClass> owlclasses = new HashSet<>();
+		Set<OWLObjectSomeValuesFrom> obsv_set = new HashSet<>();
+		Set<OWLClassExpression> conjuncts_set = new HashSet<>();
+		
+		List<Vertex> existential_vertices_nested_type = new ArrayList<>();
+		Map<Integer, List<Vertex>> existential_vertices_indices = new HashMap<>();
+		
+		List<Vertex> existential_vertices_simple_type = new ArrayList<>();
+		
+		for(Vertex adj_vertex: adjacent_vertices) {
+			String vertex_name = adj_vertex.toString();
+			if(vertex_name.contains("-role-label")) {
+				if(vertex_name.contains("_i_")) {
+					existential_vertices_nested_type.add(adj_vertex);
+					String[]vertex_name_s = vertex_name.split("_i_");
+					int index_num_vertex_n = Integer.parseInt(vertex_name_s[1]);	
+					existential_vertices_indices.put(index_num_vertex_n, new ArrayList<>());	
+				}
+			
+			//get name of vertex to check if the vertex contain role label then it's an existential vertex
+			
+				//then convert to OBSV
+				if(!vertex_name.contains("_i_")) {
+					existential_vertices_simple_type.add(adj_vertex);
+				}	
+			}else if(!vertex_name.contains("-role-label")) {
+				OWLClass cl = toOWL.getOwlClassFromVertex(adj_vertex);
+				owlclasses.add(cl);
+			}
+		}
+		
+		
+		for(Map.Entry<Integer, List<Vertex>> index_vertex_entry : existential_vertices_indices.entrySet()) {
+			List<Vertex> same_index_vertices = new ArrayList<>();
+			for(int i = 0; i < existential_vertices_nested_type.size(); i++) {
+				Vertex vertex_1 = existential_vertices_nested_type.get(i);
+				String vertex_1_name = vertex_1.toString();
+					if(vertex_1_name.contains("_i_")) {
+					String[]vertex_1_name_s = vertex_1_name.split("_i_");
+
+					int index_num_vertex_n = Integer.parseInt(vertex_1_name_s[1]);
+					if(index_vertex_entry.getKey().equals(index_num_vertex_n)) {
+						same_index_vertices.add(vertex_1);
+					}
+				}
+				}
+			
+			index_vertex_entry.setValue(same_index_vertices);
+		}
+		
+		
+		List<Vertex> nested_conjuncts_vertices = new ArrayList<>();
+		for(Map.Entry<Integer, List<Vertex>> index_vertex_same: existential_vertices_indices.entrySet()) {
+			List<Vertex> same_index_vertices = index_vertex_same.getValue();
+			String siv_name = "";
+			Vertex siv_vertex = null;
+			if(same_index_vertices.size() > 1) {
+			for(Vertex siv: same_index_vertices) {
+				siv_name += "vx_" + siv.toString();
+				siv_vertex = new Vertex(siv_name);
+				
+			}
+			nested_conjuncts_vertices.add(siv_vertex);
+			}else if(same_index_vertices.size() == 1) {
+				nested_conjuncts_vertices.addAll(same_index_vertices);
+			}
+			
+		}
+		for(Vertex constraint_v: nested_conjuncts_vertices) {
+			OWLObjectSomeValuesFrom obsv = toOWL.getOBSV(constraint_v);
+			obsv_set.add(obsv);
+		}
+		
+		for(Vertex constraint_v: existential_vertices_simple_type) {
+			OWLObjectSomeValuesFrom obsv = toOWL.getOBSV(constraint_v);
+			obsv_set.add(obsv);
+		}
+		
+		
+		conjuncts_set.addAll(owlclasses);
+		conjuncts_set.addAll(obsv_set);
+		
+		OWLSubClassOfAxiom subof = toOWL.getOWLSubClassOf(cl_lhs,conjuncts_set);
+		return subof;
 		
 	}
 	
