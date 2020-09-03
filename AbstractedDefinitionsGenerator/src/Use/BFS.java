@@ -14,11 +14,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
+import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
+import org.semanticweb.owlapi.model.OWLDataFactory;
 import org.semanticweb.owlapi.model.OWLEquivalentClassesAxiom;
+import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
+import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
+import org.semanticweb.owlapi.model.OWLSubObjectPropertyOfAxiom;
 
 import Graph.Def_Vertex;
 import Graph.Edge;
@@ -822,6 +828,22 @@ public Map<Vertex, List<Vertex>> detectEquivalences(Map<Vertex, List<Vertex>> re
 		OWLSubClassOfAxiom subof = toOWL.getOWLSubClassOf(cl_lhs,conjuncts_set);
 		return subof;
 		
+	}
+	
+	
+	public OWLSubObjectPropertyOfAxiom getOWLSubProperty(String parent_role_name, String child_role_name) {
+		
+		OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
+		OWLDataFactory df = manager.getOWLDataFactory();
+		
+		ToOWL toOWL = new ToOWL();
+		
+		OWLObjectProperty sub_property = df.getOWLObjectProperty(IRI.create(child_role_name));
+		OWLObjectProperty super_property = df.getOWLObjectProperty(IRI.create(parent_role_name));
+		
+		OWLSubObjectPropertyOfAxiom object_property_ax = toOWL.getOWLSubPropertyOf(sub_property, super_property);
+		
+		return object_property_ax;	
 	}
 	
 	public Boolean checkSubsumptionRelationBetweenTwoRoles_TD(String parent_role_name, String child_role_name, List<Edge> role_edges) {

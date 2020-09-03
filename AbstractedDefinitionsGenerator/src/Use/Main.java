@@ -32,6 +32,7 @@ import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLEquivalentClassesAxiom;
 import org.semanticweb.owlapi.model.OWLLogicalAxiom;
 import org.semanticweb.owlapi.model.OWLObjectIntersectionOf;
+import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLObjectPropertyExpression;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
@@ -39,6 +40,7 @@ import org.semanticweb.owlapi.model.OWLOntologyLoaderConfiguration;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.semanticweb.owlapi.model.OWLOntologyStorageException;
 import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
+import org.semanticweb.owlapi.model.OWLSubObjectPropertyOfAxiom;
 import org.semanticweb.owlapi.model.OWLTransitiveObjectPropertyAxiom;
 import org.semanticweb.owlapi.reasoner.InferenceType;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
@@ -143,7 +145,10 @@ public class Main {
         
         
         Set<OWLEquivalentClassesAxiom> abstracted_definitions = new HashSet<>();
-      
+        Set<OWLSubClassOfAxiom> inclusion_axioms = new HashSet<>();
+        Set<OWLSubObjectPropertyOfAxiom> property_inclusion_axioms = new HashSet<>();
+        
+        
 		List<OWLObjectPropertyExpression> transitive_roles_exps = new ArrayList<>();
 		 for(OWLLogicalAxiom axiom: module_1.getLogicalAxioms()) {
 			 if(axiom.isOfType(AxiomType.TRANSITIVE_OBJECT_PROPERTY)) {
@@ -158,21 +163,21 @@ public class Main {
 		}
         
         graph.setRoleEdges(list_role_edges);
-        
+        BFS bfs = new BFS(graph);
         long startTime21 = System.currentTimeMillis();
-
+        
        	for(OWLClass cl: sig_O.getClassesInSignature()) {
        		if(isDefined(cl, O){
        			Def_Vertex DV = toGraph.getDefVertexFromClass(cl);
        			System.out.println("current DV: " + DV);
        			Set<OWLEquivalentClassesAxiom> equiv_of_current_defined = module_1.getEquivalentClassesAxioms(defined_cl);
        			System.out.println("current equiv_of_current_defined: " + equiv_of_current_defined);
-       			BFS get_def = new BFS(graph);
+       			//BFS get_def = new BFS(graph);
        			//for each DV vertex in defined_cls get the RHS
        			graph.setVertexLhs(DV);
        			Vertex gotten_dv = graph.getVertexLhs();
        			System.out.println("current gotten DV: " + gotten_dv);
-       			OWLEquivalentClassesAxiom OWCA = get_def.get_abstract_def();
+       			OWLEquivalentClassesAxiom OWCA = bfs.get_abstract_def();
        			Set<OWLSubClassOfAxiom> subof = OWCA.asOWLSubClassOfAxioms();
        			for(OWLSubClassOfAxiom s: subof) {
        				OWLClassExpression rhs = s.getSuperClass();
@@ -189,18 +194,42 @@ public class Main {
        			System.out.println("current NDV: " + NDV);
        			Set<OWLSubClassOfAxiom> subof_ax = module_1.getSubClassAxiomsForSubClass(cl);
        			System.out.println("current subof_ax: " + subof_ax);
-       			BFS get_sub = new BFS(graph);
+       			//BFS get_sub = new BFS(graph);
        			graph.setVertexLhs(NDV);
        			Vertex gotten_ndv = graph.getVertexLhs();
        			System.out.println("current gotten NDV: " + gotten_ndv);
-       			OWLSubClassOfAxiom owl_subof = get_sub.get_subof_ax();
+       			OWLSubClassOfAxiom owl_subof = bfs.get_subof_ax();
+       			inclusion_axioms.add(owl_subof);
        			System.out.println("the converted owl_subof is: " + owl_subof);
        		}
         }
+       	
+       	for(OWLObjectProperty op1 : O.getObjectPropertiesInSignature()) {
+       		//for each object property op 
+       		for(OWLObjectProperty op2 : O.getObjectPropertiesInSignature()) {
+       			//convert op1 and op2 to vertices
+       			//the type of vertex is Primitive vertex
+       			NDef_Vertex property_vertex1 = toGraph.getVertexFromProperty(op1);
+       			NDef_Vertex property_vertex2 = toGraph.getVertexFromProperty(op2);
+       			
+       			//get names then pass the names with role edges list to the method: checkSubsumptionRelationBetweenTwoRoles_TD
+       			String property_vertex1_name = property_vertex1.toString();
+       			String property_vertex2_name = property_vertex2.toString();
+       			if(bfs.checkSubsumptionRelationBetweenTwoRoles_TD(property_vertex1_name, property_vertex2_name, list_role_edges)) {
+       				OWLSubObjectPropertyOfAxiom sub_object_owl_axiom = bfs.getOWLSubProperty(property_vertex1_name, property_vertex2_name);
+       				property_inclusion_axioms.add(sub_object_owl_axiom);
+       			}
+       		}
+       	}
        	long endTime21 = System.currentTimeMillis();
        	System.out.println("Total Definitions Extraction Duration = " + (endTime21 - startTime21) + " millis");
         System.out.println("size of abstracted_definitions: " + abstracted_definitions.size());
+        
         Set<OWLEquivalentClassesAxiom> entailed_abstracted_definitions = new HashSet<>();
+        Set<OWLSubClassOfAxiom> entailed_inclusion_axioms = new HashSet<>();
+        Set<OWLSubObjectPropertyOfAxiom> entailed_property_inclusion_axioms = new HashSet<>();
+        
+        
         //validate the definitions
         for(OWLEquivalentClassesAxiom abstract_def: abstracted_definitions) {
         	System.out.println("the current abstract_def is: " + abstract_def);
@@ -209,8 +238,27 @@ public class Main {
         		}
         }
         
+        for(OWLSubClassOfAxiom subof_ax: inclusion_axioms) {
+        	System.out.println("the current subof_ax is: " + subof_ax);
+        		if(checkEntailement(subof_ax, O)) {
+        		//if(checkEntailement(abstract_def, module_1)) {
+        			entailed_inclusion_axioms.add(subof_ax);
+        		}
+        }
+        
+        for(OWLSubObjectPropertyOfAxiom property_ax: property_inclusion_axioms) {
+        	System.out.println("the current property_ax is: " + property_ax);
+        	if(checkEntailement(property_ax, O)) {
+        		//if(checkEntailement(abstract_def, module_1)) {
+        		entailed_property_inclusion_axioms.add(property_ax);
+        		}
+        }
+        
         
         System.out.println("size of entailed_abstracted_definitions: " + entailed_abstracted_definitions.size());
+        System.out.println("size of entailed_inclusion_axioms: " + entailed_inclusion_axioms.size());
+        System.out.println("size of entailed_property_inclusion_axioms: " + entailed_property_inclusion_axioms.size());
+        
         
         manager5.addAxioms(ontology_abstract_def, entailed_abstracted_definitions);
         

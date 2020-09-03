@@ -17,6 +17,7 @@ import org.semanticweb.owlapi.model.OWLObjectIntersectionOf;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
+import org.semanticweb.owlapi.model.OWLSubObjectPropertyOfAxiom;
 
 import Graph.Vertex;
 
@@ -45,7 +46,11 @@ public class ToOWL {
 	}
 	
 	
-	//From Edge to OWLAxiom
+	public OWLSubObjectPropertyOfAxiom getOWLSubPropertyOf(OWLObjectProperty child_property, OWLObjectProperty parent_property) {
+		
+		OWLSubObjectPropertyOfAxiom subprof_axiom = df.getOWLSubObjectPropertyOfAxiom(child_property, parent_property);
+		return subprof_axiom;
+	}
 	
 	
 	//From labelledVertex to existential Expression
