@@ -17,6 +17,7 @@ import org.semanticweb.owlapi.model.OWLObjectIntersectionOf;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
+import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
 import org.semanticweb.owlapi.model.OWLSubObjectPropertyOfAxiom;
 
 import Graph.Vertex;
@@ -155,7 +156,18 @@ public class ToOWL {
 		return def_axiom;
 	}
 	
+	public OWLSubClassOfAxiom getOWLSubClassOf(OWLClass lhs_cl, Set<OWLClassExpression> rhs_conjunct_set) {
+		
+		OWLObjectIntersectionOf conjuncts = df.getOWLObjectIntersectionOf(rhs_conjunct_set);
+		OWLSubClassOfAxiom subof_axiom = df.getOWLSubClassOfAxiom(lhs_cl, conjuncts);
 	
+		if (rhs_conjunct_set.size() == 1) {
+			for(OWLClassExpression owl_exp: rhs_conjunct_set) {
+					subof_axiom = df.getOWLSubClassOfAxiom(lhs_cl, owl_exp);
+			}
+		}
+		return subof_axiom;
+	}
 	// Function to remove the element from an string array
     public static String[] removeTheElement(String[] arr, 
                                           int index) 

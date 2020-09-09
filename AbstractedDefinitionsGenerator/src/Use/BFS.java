@@ -29,7 +29,6 @@ import org.semanticweb.owlapi.model.OWLSubObjectPropertyOfAxiom;
 import Graph.Def_Vertex;
 import Graph.Edge;
 import Graph.NDef_Vertex;
-import Graph.Role_g_Vertex;
 import Graph.Vertex;
 import Converter.ToOWL;
 

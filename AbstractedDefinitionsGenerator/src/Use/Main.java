@@ -167,10 +167,10 @@ public class Main {
         long startTime21 = System.currentTimeMillis();
         
        	for(OWLClass cl: sig_O.getClassesInSignature()) {
-       		if(isDefined(cl, O){
+       		if(isDefined(cl, O)){
        			Def_Vertex DV = toGraph.getDefVertexFromClass(cl);
        			System.out.println("current DV: " + DV);
-       			Set<OWLEquivalentClassesAxiom> equiv_of_current_defined = module_1.getEquivalentClassesAxioms(defined_cl);
+       			Set<OWLEquivalentClassesAxiom> equiv_of_current_defined = module_1.getEquivalentClassesAxioms(cl);
        			System.out.println("current equiv_of_current_defined: " + equiv_of_current_defined);
        			//BFS get_def = new BFS(graph);
        			//for each DV vertex in defined_cls get the RHS
