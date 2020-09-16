@@ -166,42 +166,67 @@ public class Main {
         BFS bfs = new BFS(graph);
         long startTime21 = System.currentTimeMillis();
         
-       	for(OWLClass cl: sig_O.getClassesInSignature()) {
-       		if(isDefined(cl, O)){
-       			Def_Vertex DV = toGraph.getDefVertexFromClass(cl);
-       			System.out.println("current DV: " + DV);
-       			Set<OWLEquivalentClassesAxiom> equiv_of_current_defined = module_1.getEquivalentClassesAxioms(cl);
-       			System.out.println("current equiv_of_current_defined: " + equiv_of_current_defined);
-       			//BFS get_def = new BFS(graph);
-       			//for each DV vertex in defined_cls get the RHS
-       			graph.setVertexLhs(DV);
-       			Vertex gotten_dv = graph.getVertexLhs();
-       			System.out.println("current gotten DV: " + gotten_dv);
-       			OWLEquivalentClassesAxiom OWCA = bfs.get_abstract_def();
-       			Set<OWLSubClassOfAxiom> subof = OWCA.asOWLSubClassOfAxioms();
-       			for(OWLSubClassOfAxiom s: subof) {
-       				OWLClassExpression rhs = s.getSuperClass();
-       				if(rhs instanceof OWLObjectIntersectionOf) {
-       					Set<OWLClassExpression> conjuncts = rhs.asConjunctSet();
-       					if(!conjuncts.isEmpty()) {
-       						abstracted_definitions.add(OWCA);
-       					}
-       				}
-       			}
-       		}//if the concept is primitive then get the immediate adjacent vertices
-       		if(!isDefined(cl, O)) {
-       			NDef_Vertex NDV = toGraph.getNDefVertexFromClass(cl);
-       			System.out.println("current NDV: " + NDV);
-       			Set<OWLSubClassOfAxiom> subof_ax = module_1.getSubClassAxiomsForSubClass(cl);
-       			System.out.println("current subof_ax: " + subof_ax);
-       			//BFS get_sub = new BFS(graph);
-       			graph.setVertexLhs(NDV);
-       			Vertex gotten_ndv = graph.getVertexLhs();
-       			System.out.println("current gotten NDV: " + gotten_ndv);
-       			OWLSubClassOfAxiom owl_subof = bfs.get_subof_ax();
-       			inclusion_axioms.add(owl_subof);
-       			System.out.println("the converted owl_subof is: " + owl_subof);
-       		}
+       	//for(OWLClass cl: sig_O.getClassesInSignature()) {
+        for(OWLEntity en: sig_O.getSignature()) {
+        			if(en.isOWLClass()) {
+        				if(isDefined(en.asOWLClass(), O)){
+        					Def_Vertex DV = toGraph.getDefVertexFromClass(en.asOWLClass());
+        					System.out.println("current DV: " + DV);
+        					Set<OWLEquivalentClassesAxiom> equiv_of_current_defined = module_1.getEquivalentClassesAxioms(en.asOWLClass());
+        					System.out.println("current equiv_of_current_defined: " + equiv_of_current_defined);
+        					//BFS get_def = new BFS(graph);
+        					//for each DV vertex in defined_cls get the RHS
+        					graph.setVertexLhs(DV);
+        					Vertex gotten_dv = graph.getVertexLhs();
+        					System.out.println("current gotten DV: " + gotten_dv);
+        					OWLEquivalentClassesAxiom OWCA = bfs.get_abstract_def();
+        					Set<OWLSubClassOfAxiom> subof = OWCA.asOWLSubClassOfAxioms();
+        					for(OWLSubClassOfAxiom s: subof) {
+        						OWLClassExpression rhs = s.getSuperClass();
+        						if(rhs instanceof OWLObjectIntersectionOf) {
+        							Set<OWLClassExpression> conjuncts = rhs.asConjunctSet();
+        							if(!conjuncts.isEmpty()) {
+        								abstracted_definitions.add(OWCA);
+        							}
+        						}
+        					}
+        				}//if the concept is primitive then get the immediate adjacent vertices
+        				if(!isDefined(en.asOWLClass(), O)) {
+        					NDef_Vertex NDV = toGraph.getNDefVertexFromClass(en.asOWLClass());
+        					System.out.println("current NDV: " + NDV);
+        					Set<OWLSubClassOfAxiom> subof_ax = module_1.getSubClassAxiomsForSubClass(en.asOWLClass());
+        					System.out.println("current subof_ax: " + subof_ax);
+        					//BFS get_sub = new BFS(graph);
+        					graph.setVertexLhs(NDV);
+        					Vertex gotten_ndv = graph.getVertexLhs();
+        					System.out.println("current gotten NDV: " + gotten_ndv);
+        					OWLSubClassOfAxiom owl_subof = bfs.get_subof_ax();
+        					inclusion_axioms.add(owl_subof);
+        					System.out.println("the converted owl_subof is: " + owl_subof);
+        				}
+        			}if(en.isOWLObjectProperty()) {
+        				NDef_Vertex NPV = toGraph.getVertexFromProperty(en.asOWLObjectProperty());
+        				Set<OWLSubObjectPropertyOfAxiom> owl_sub_property = O.getObjectSubPropertyAxiomsForSubProperty(en.asOWLObjectProperty());
+        				System.out.println("The current owl_sub_property before retrieval from edges: " + owl_sub_property);
+        				graph.setVertexLhs(NPV);
+        				//instead of using  bfs, use the role edges?
+        				//assuming that the gotten npv is the destination? (the child), we will get its parent (the source from the role edges)
+        				for(Edge edge: list_role_edges) {
+        					//get from edge the parent?
+        					//check if the current edge child vertex (destination is equal to the current entity)
+        					
+        					Vertex edge_destination = edge.getGDestination();
+        					if(NPV.toString().equals(edge_destination.toString())){
+        						Vertex edge_source = edge.getGSource();
+        						String property_vertex1_name = edge_source.toString();
+        	   					String property_vertex2_name = edge_destination.toString();
+        						OWLSubObjectPropertyOfAxiom owl_sub_property_axiom = bfs.getOWLSubProperty(property_vertex1_name, property_vertex2_name);
+        						property_inclusion_axioms.add(owl_sub_property_axiom);
+        					}
+        					
+        				}
+        			}
+        		
         }
        	
        	for(OWLObjectProperty op1 : O.getObjectPropertiesInSignature()) {
