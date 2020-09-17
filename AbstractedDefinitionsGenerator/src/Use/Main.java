@@ -32,7 +32,6 @@ import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLEquivalentClassesAxiom;
 import org.semanticweb.owlapi.model.OWLLogicalAxiom;
 import org.semanticweb.owlapi.model.OWLObjectIntersectionOf;
-import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLObjectPropertyExpression;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
@@ -51,6 +50,7 @@ import org.semanticweb.owlapi.util.InferredOntologyGenerator;
 import org.semanticweb.owlapi.util.InferredSubClassAxiomGenerator;
 
 import Converter.ToGraph;
+import Converter.ToOWL;
 import Graph.Def_Vertex;
 import Graph.Edge;
 import Graph.NDef_Vertex;
@@ -64,7 +64,7 @@ public class Main {
 	public void useBFS_get_defined_sig(String sig_file, String module_file) throws OWLOntologyCreationException, IOException, ClassNotFoundException, OWLOntologyStorageException {
 		PrintStream out;
 		try {
-			out = new PrintStream(new FileOutputStream(sig_file + "-useBFS-output-stream-whole-module-2017-newclass-3.txt"));
+			out = new PrintStream(new FileOutputStream(sig_file + "-useBFS-output-stream-whole-module-2017.txt"));
 			System.setOut(out);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -164,11 +164,19 @@ public class Main {
         
         graph.setRoleEdges(list_role_edges);
         BFS bfs = new BFS(graph);
+        
+        Set<Vertex> sigma_plus_vertices = new HashSet<>();
+        Set<Vertex> sigma_plus_property_vertices = new HashSet<>();
+        Set<Vertex> sigma_plus_class_vertices = new HashSet<>();
+        
+        
         long startTime21 = System.currentTimeMillis();
         
        	//for(OWLClass cl: sig_O.getClassesInSignature()) {
         for(OWLEntity en: sig_O.getSignature()) {
         			if(en.isOWLClass()) {
+        				
+        				//GET THE ABSTRACT DEFINITION FOR THE DEFINED CONCEPT
         				if(isDefined(en.asOWLClass(), O)){
         					Def_Vertex DV = toGraph.getDefVertexFromClass(en.asOWLClass());
         					System.out.println("current DV: " + DV);
@@ -187,10 +195,14 @@ public class Main {
         							Set<OWLClassExpression> conjuncts = rhs.asConjunctSet();
         							if(!conjuncts.isEmpty()) {
         								abstracted_definitions.add(OWCA);
+        								sigma_plus_class_vertices.addAll(graph.getProximalPrimitiveVertices());
+        	        						sigma_plus_vertices.addAll(graph.getExistentialVerticesNoRedundancies());
         							}
         						}
         					}
-        				}//if the concept is primitive then get the immediate adjacent vertices
+        				}
+
+        				//GET THE INCLUSION AXIOM FOR THE PRIMITIVE CONCEPT
         				if(!isDefined(en.asOWLClass(), O)) {
         					NDef_Vertex NDV = toGraph.getNDefVertexFromClass(en.asOWLClass());
         					System.out.println("current NDV: " + NDV);
@@ -203,11 +215,13 @@ public class Main {
         					OWLSubClassOfAxiom owl_subof = bfs.get_subof_ax();
         					inclusion_axioms.add(owl_subof);
         					System.out.println("the converted owl_subof is: " + owl_subof);
+        	   				sigma_plus_vertices.addAll(graph.getAdjacentVertices());	
         				}
-        			}if(en.isOWLObjectProperty()) {
+        			}
+        			//GET THE ROLE AXIOM FOR THE ROLE IN SIGMA
+        			if(en.isOWLObjectProperty()) {
         				NDef_Vertex NPV = toGraph.getVertexFromProperty(en.asOWLObjectProperty());
-        				Set<OWLSubObjectPropertyOfAxiom> owl_sub_property = O.getObjectSubPropertyAxiomsForSubProperty(en.asOWLObjectProperty());
-        				System.out.println("The current owl_sub_property before retrieval from edges: " + owl_sub_property);
+        				//Set<OWLSubObjectPropertyOfAxiom> owl_sub_property = O.getObjectSubPropertyAxiomsForSubProperty(en.asOWLObjectProperty());
         				graph.setVertexLhs(NPV);
         				//instead of using  bfs, use the role edges?
         				//assuming that the gotten npv is the destination? (the child), we will get its parent (the source from the role edges)
@@ -222,30 +236,74 @@ public class Main {
         	   					String property_vertex2_name = edge_destination.toString();
         						OWLSubObjectPropertyOfAxiom owl_sub_property_axiom = bfs.getOWLSubProperty(property_vertex1_name, property_vertex2_name);
         						property_inclusion_axioms.add(owl_sub_property_axiom);
+        						sigma_plus_vertices.add(edge_source);
+        						sigma_plus_property_vertices.add(edge_source);
         					}
         					
         				}
         			}
-        		
         }
-       	
-       	for(OWLObjectProperty op1 : O.getObjectPropertiesInSignature()) {
-       		//for each object property op 
-       		for(OWLObjectProperty op2 : O.getObjectPropertiesInSignature()) {
-       			//convert op1 and op2 to vertices
-       			//the type of vertex is Primitive vertex
-       			NDef_Vertex property_vertex1 = toGraph.getVertexFromProperty(op1);
-       			NDef_Vertex property_vertex2 = toGraph.getVertexFromProperty(op2);
-       			
-       			//get names then pass the names with role edges list to the method: checkSubsumptionRelationBetweenTwoRoles_TD
-       			String property_vertex1_name = property_vertex1.toString();
-       			String property_vertex2_name = property_vertex2.toString();
-       			if(bfs.checkSubsumptionRelationBetweenTwoRoles_TD(property_vertex1_name, property_vertex2_name, list_role_edges)) {
-       				OWLSubObjectPropertyOfAxiom sub_object_owl_axiom = bfs.getOWLSubProperty(property_vertex1_name, property_vertex2_name);
-       				property_inclusion_axioms.add(sub_object_owl_axiom);
+       
+        for(Vertex vertex: sigma_plus_vertices) {
+       		String vertex_role_name = "";
+       		String vertex_class_name = "";
+       		if(vertex.toString().contains("-role-label")) {
+       			if(vertex.toString().contains("_i_")) {
+       				String[] vertex_name_s = vertex.toString().split("_i_");
+       				String vertex_name_w_role = vertex_name_s[0];
+       				String[] vertex_name_w_role_s = vertex_name_w_role.split("-role-label: ");
+       				vertex_role_name = vertex_name_w_role_s[1];
+       				vertex_class_name = vertex_name_w_role_s[0];
+       			}else {
+       				String[] vertex_name_w_role_s = vertex.toString().split("-role-label: ");
+       				vertex_role_name = vertex_name_w_role_s[1];
+       				vertex_class_name = vertex_name_w_role_s[0];
        			}
-       		}
+       			
+       			NDef_Vertex property_vertex = new NDef_Vertex(vertex_role_name);
+       			sigma_plus_property_vertices.add(property_vertex);
+      
+       			Vertex class_vertex =  new Vertex(vertex_class_name);
+       			sigma_plus_class_vertices.add(class_vertex);
+       		}	
        	}
+        
+        //System.out.println("the set sigma_plus_class_vertices: " + sigma_plus_class_vertices);
+        
+        for(Vertex cl_vertex_1: sigma_plus_class_vertices) {
+   			//System.out.println("the current cl_vertex_1: " + cl_vertex_1);
+   			for(Vertex cl_vertex_2: sigma_plus_class_vertices) {
+   				//System.out.println("the current cl_vertex_2: " + cl_vertex_2);
+   				if(!cl_vertex_1.equals(cl_vertex_2)) {
+   					if(bfs.BFS_sigma_plus_vertices(cl_vertex_1, cl_vertex_2, adjacency_list_map)) {
+   						Set<OWLClassExpression> rhs_conjunct = new HashSet<>();
+   						ToOWL toOWL = new ToOWL();
+   						OWLClass cl_1 = toOWL.getOwlClassFromVertex(cl_vertex_1);
+   						OWLClass cl_2 = toOWL.getOwlClassFromVertex(cl_vertex_2);
+   						rhs_conjunct.add(cl_2);
+   						OWLSubClassOfAxiom subof = toOWL.getOWLSubClassOf(cl_1, rhs_conjunct);
+   						inclusion_axioms.add(subof);
+   					}
+   				}
+   			}
+   		}
+        
+        //System.out.println("the current sigma_plus_property_vertices: " + sigma_plus_property_vertices);
+        
+        for(Vertex op_vertex_1: sigma_plus_property_vertices) {
+   			for(Vertex op_vertex_2: sigma_plus_property_vertices) {
+   				String property_vertex1_name = op_vertex_1.toString();
+					String property_vertex2_name = op_vertex_2.toString();
+					if(bfs.checkSubsumptionRelationBetweenTwoRoles_TD(property_vertex1_name, property_vertex2_name, list_role_edges)) {
+						OWLSubObjectPropertyOfAxiom sub_object_owl_axiom = bfs.getOWLSubProperty(property_vertex1_name, property_vertex2_name);
+						property_inclusion_axioms.add(sub_object_owl_axiom);
+					}
+   			}
+   		}
+        
+        System.out.println("size of abstracted_definitions: " + abstracted_definitions.size());
+        
+        
        	long endTime21 = System.currentTimeMillis();
        	System.out.println("Total Definitions Extraction Duration = " + (endTime21 - startTime21) + " millis");
         System.out.println("size of abstracted_definitions: " + abstracted_definitions.size());

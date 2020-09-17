@@ -20,7 +20,7 @@ public class Graph {
 	 List<Vertex> existential_vertices = new ArrayList<>();
 	 List<Vertex> proximal_primitive_vertices = new ArrayList<>();
 	 List<Vertex> existential_vertices_no_redundancies = new ArrayList<>();
-	
+	 List<Vertex> adjacent_vertices = new ArrayList<>();
 	
 	
 	 Vertex vertex_lhs;
@@ -81,6 +81,14 @@ public class Graph {
 
 	public void setExistentialVerticesNoRedundancies(List<Vertex> existential_vertices_no_redundancies) {
 		this.existential_vertices_no_redundancies = existential_vertices_no_redundancies;
+	}
+	
+	public void setAdjacentVertices(List<Vertex> adjacent_vertices) {
+		this.adjacent_vertices = adjacent_vertices;
+	}
+	
+	public List<Vertex> getAdjacentVertices(){
+		return adjacent_vertices;
 	}
  
     

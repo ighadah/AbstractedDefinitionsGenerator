@@ -64,6 +64,7 @@ public class BFS{
 		Vertex starting_vertex = graph.getVertexLhs();
 		List<Vertex> adjacent_vertices = get_immediate_adjacent_vertices(starting_vertex, adjacency_list_map);
 		System.out.println("the adjacent_vertices: " + adjacent_vertices);
+		graph.setAdjacentVertices(adjacent_vertices);
 		return getOWLSubClassOfAxiom(starting_vertex, adjacent_vertices);
 	}
 	
@@ -239,6 +240,71 @@ public class BFS{
 	return primitives_parents_clean; 
 	}
 	
+	
+	public boolean BFS_sigma_plus_vertices(Vertex starting_vertex, Vertex ending_vertex, Map<Vertex, List<Vertex>> adjacency_list_map){
+		System.out.println("the current starting vertex is: " + starting_vertex);
+		System.out.println("the current ending vertex is: " + ending_vertex);
+		Vertex lhs_v = starting_vertex;
+		Vertex DV = lhs_v;
+		Vertex rhs_v = ending_vertex;
+		Vertex EV = rhs_v;
+		for(Vertex v: adjacency_list_map.keySet()) {
+		//System.out.println("0 current key vertex inside map of adj. lists: " + v);
+			if(v.toString().equals(lhs_v.toString())) {
+			System.out.println("the current vertex is equal to starting vertex: " + v);
+				DV = v;
+			}
+			/*if(v.toString().equals(rhs_v.toString())) {
+				EV = v;
+			}	*/
+		}
+		for(Vertex v2: adjacency_list_map.keySet()) {
+			if(v2.toString().equals(rhs_v.toString())) {
+				System.out.println("the current vertex is equal to ending vertex: " + v2);
+				EV = v2;
+			}
+		}
+		String EV_name = EV.toString();
+		System.out.println("the current DV is: " + DV);
+		System.out.println("the current EV is: " + EV);
+			Map<Vertex, Boolean> visited= new HashMap<>();
+			LinkedList<Vertex> queue = new LinkedList<Vertex>();
+				for(Vertex key_vertex: adjacency_list_map.keySet()) {
+						visited.put(key_vertex, false);
+					}
+				//Vertex vertex_to_queue = starting_vertex;
+				visited.replace(DV, true);
+				queue.add(DV);
+				while (queue.size() != 0) 
+				        { 
+				 DV = queue.poll(); 
+			
+				 List<Vertex> adj_vertices = adjacency_list_map.get(DV);
+				 System.out.println("the adj_vertices is: " + adj_vertices);
+				 Iterator<Vertex> it = adj_vertices.listIterator();
+				     while(it.hasNext()) {
+						Vertex v = it.next();
+						System.out.println("the current v is: " + v);
+						String v_name = v.toString();
+						
+							if(v_name.equals(EV_name)) {
+								
+								System.out.println("the current v is equal to EV vertex");
+								return true;
+							}
+							for(Vertex key_v: visited.keySet()) {
+								if(key_v.toString().equals(v.toString())) {
+									if(!visited.get(key_v)) {
+										visited.replace(key_v, true);
+										queue.add(key_v);
+										}
+									}
+							}
+						}
+			}
+		
+		return false; 
+	}
 	
 	
 	public List<Vertex> remove_redundant_exist_restrictions(List<Vertex> existential_vertices, Map<Vertex, List<Vertex>> adjacency_list_map){
