@@ -64,7 +64,7 @@ public class Main {
 	public void useBFS_get_defined_sig(String sig_file, String module_file) throws OWLOntologyCreationException, IOException, ClassNotFoundException, OWLOntologyStorageException {
 		PrintStream out;
 		try {
-			out = new PrintStream(new FileOutputStream(sig_file + "-useBFS-output-stream-whole-module-2017.txt"));
+			out = new PrintStream(new FileOutputStream(sig_file + "-useBFS-04-2017.txt"));
 			System.setOut(out);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -344,8 +344,11 @@ public class Main {
         
         
         manager5.addAxioms(ontology_abstract_def, entailed_abstracted_definitions);
+        manager5.addAxioms(ontology_abstract_def, entailed_inclusion_axioms);
+        manager5.addAxioms(ontology_abstract_def, entailed_property_inclusion_axioms);
         
-        OutputStream os_onto_witness_1 = new FileOutputStream(sig_file + "-abstract_def_newclass-3-2017.owl");
+        System.out.println("the ontology_abstract_def axioms: " + ontology_abstract_def.getLogicalAxioms());
+        OutputStream os_onto_witness_1 = new FileOutputStream(sig_file + "-abstract_def_04-2017.owl");
 		manager5.saveOntology(ontology_abstract_def, new FunctionalSyntaxDocumentFormat(), os_onto_witness_1);
         }
 	
