@@ -267,7 +267,11 @@ public class Main {
       
        			Vertex class_vertex =  new Vertex(vertex_class_name);
        			sigma_plus_class_vertices.add(class_vertex);
-       		}	
+       		}else {
+       			vertex_class_name = vertex.toString();
+       			Vertex class_vertex =  new Vertex(vertex_class_name);
+       			sigma_plus_class_vertices.add(class_vertex);
+       		}		
        	}
         
         //System.out.println("the set sigma_plus_class_vertices: " + sigma_plus_class_vertices);
@@ -321,14 +325,15 @@ public class Main {
    			}
    		}
         
+       
+        
+       	long endTime21 = System.currentTimeMillis();
+       	System.out.println("Total Definitions Extraction Duration = " + (endTime21 - startTime21) + " millis");
+       	
         System.out.println("size of abstracted_definitions: " + abstracted_definitions.size());
         System.out.println("size of inclusion_axioms: "+ inclusion_axioms);
         System.out.println("size of no_redundant_inclusion_axioms: "+ no_redundant_inclusion_axioms);
         System.out.println("size of property_inclusion_axioms: "+ property_inclusion_axioms);
-        
-       	long endTime21 = System.currentTimeMillis();
-       	System.out.println("Total Definitions Extraction Duration = " + (endTime21 - startTime21) + " millis");
-        System.out.println("size of abstracted_definitions: " + abstracted_definitions.size());
         
         Set<OWLEquivalentClassesAxiom> entailed_abstracted_definitions = new HashSet<>();
         Set<OWLSubClassOfAxiom> entailed_inclusion_axioms = new HashSet<>();
