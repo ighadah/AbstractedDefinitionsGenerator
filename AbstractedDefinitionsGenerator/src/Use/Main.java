@@ -203,20 +203,22 @@ public class Main {
         				}
 
         				//GET THE INCLUSION AXIOM FOR THE PRIMITIVE CONCEPT
-        				if(!isDefined(en.asOWLClass(), O)) {
-        					NDef_Vertex NDV = toGraph.getNDefVertexFromClass(en.asOWLClass());
-        					System.out.println("current NDV: " + NDV);
-        					Set<OWLSubClassOfAxiom> subof_ax = module_1.getSubClassAxiomsForSubClass(en.asOWLClass());
-        					System.out.println("current subof_ax: " + subof_ax);
-        					//BFS get_sub = new BFS(graph);
-        					graph.setVertexLhs(NDV);
-        					Vertex gotten_ndv = graph.getVertexLhs();
-        					System.out.println("current gotten NDV: " + gotten_ndv);
-        					OWLSubClassOfAxiom owl_subof = bfs.get_subof_ax();
-        					inclusion_axioms.add(owl_subof);
-        					System.out.println("the converted owl_subof is: " + owl_subof);
-        	   				sigma_plus_vertices.addAll(graph.getAdjacentVertices());	
-        				}
+        				else if(!isDefined(en.asOWLClass(), O)) {
+        	   				NDef_Vertex NDV = toGraph.getNDefVertexFromClass(en.asOWLClass());
+        	   				System.out.println("current NDV: " + NDV);
+        	   				Set<OWLSubClassOfAxiom> subof_ax = O.getSubClassAxiomsForSubClass(en.asOWLClass());
+        	   				System.out.println("current subof_ax: " + subof_ax);
+        	   				inclusion_axioms.addAll(subof_ax);
+        	   				//get the vertices of the RHS of axioms in the set subof_ax
+        	   				for(OWLSubClassOfAxiom subof: subof_ax) {
+        	   					System.out.println("The current subof: " + subof);
+        	   					if(!subof.isGCI()) {
+        	   						OWLClassExpression rhs = subof.getSuperClass();
+        	   						sigma_plus_class_vertices.addAll(toGraph.getClassVerticesInSignatureInRHSExpression(rhs));
+        	   						sigma_plus_property_vertices.addAll(toGraph.getPropertyVerticesInSignatureInRHSExpression(rhs));
+        	   						}
+        	   					}
+        	       			}
         			}
         			//GET THE ROLE AXIOM FOR THE ROLE IN SIGMA
         			if(en.isOWLObjectProperty()) {
@@ -301,8 +303,28 @@ public class Main {
    			}
    		}
         
-        System.out.println("size of abstracted_definitions: " + abstracted_definitions.size());
+      //remove redundant inclusion axioms
+   		Set<OWLSubClassOfAxiom> no_redundant_inclusion_axioms = new HashSet<>(inclusion_axioms);
+   		for(OWLSubClassOfAxiom subof_1: inclusion_axioms) {
+   			OWLClassExpression lhs_1 = subof_1.getSubClass();
+   			OWLClassExpression rhs_1 = subof_1.getSuperClass();
+   			for(OWLSubClassOfAxiom subof_2: inclusion_axioms) {
+   				OWLClassExpression lhs_2 = subof_2.getSubClass();
+   				OWLClassExpression rhs_2 = subof_2.getSuperClass();
+   				if(!subof_1.equals(subof_2)) {
+   					if(lhs_1.equals(lhs_2)) {
+   						if(rhs_2.containsConjunct(rhs_1)) {
+   							no_redundant_inclusion_axioms.remove(subof_1);
+   						}
+   					}
+   				}
+   			}
+   		}
         
+        System.out.println("size of abstracted_definitions: " + abstracted_definitions.size());
+        System.out.println("size of inclusion_axioms: "+ inclusion_axioms);
+        System.out.println("size of no_redundant_inclusion_axioms: "+ no_redundant_inclusion_axioms);
+        System.out.println("size of property_inclusion_axioms: "+ property_inclusion_axioms);
         
        	long endTime21 = System.currentTimeMillis();
        	System.out.println("Total Definitions Extraction Duration = " + (endTime21 - startTime21) + " millis");
@@ -321,7 +343,7 @@ public class Main {
         		}
         }
         
-        for(OWLSubClassOfAxiom subof_ax: inclusion_axioms) {
+        for(OWLSubClassOfAxiom subof_ax: no_redundant_inclusion_axioms) {
         	System.out.println("the current subof_ax is: " + subof_ax);
         		if(checkEntailement(subof_ax, O)) {
         		//if(checkEntailement(abstract_def, module_1)) {
