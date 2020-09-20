@@ -430,6 +430,152 @@ public class Main {
 		return infOnt;			
 	}
 	
+	//PostProcessor (remove transitive closure axioms, and duplicate axioms)
+	
+	
+	//Method that removes transitive closure axioms (I'm assuming that all transitive closure axioms are inclusion axioms)
+		public void remove_transitive_closure_axioms(String filePath) throws OWLOntologyCreationException, FileNotFoundException, OWLOntologyStorageException {
+			OWLOntologyManager manager1 = OWLManager.createOWLOntologyManager();
+			
+			File file1 = new File(filePath);
+			IRI iri1 = IRI.create(file1);
+			OWLOntology O = manager1.loadOntologyFromOntologyDocument(new IRIDocumentSource(iri1),
+					new OWLOntologyLoaderConfiguration().setLoadAnnotationAxioms(true));
+			
+			
+			System.out.println("the O axioms size: " + O.getLogicalAxiomCount());
+			System.out.println("the O classes size: " + O.getClassesInSignature().size());
+			System.out.println("the O properties size: " + O.getObjectPropertiesInSignature().size());
+			
+			
+			Set<OWLSubClassOfAxiom> inclusion_axioms = new HashSet<>();
+			for(OWLAxiom axiom: O.getLogicalAxioms()) {
+				if(axiom.isOfType(AxiomType.SUBCLASS_OF)) {
+					OWLSubClassOfAxiom subof = (OWLSubClassOfAxiom) axiom;
+					if(!subof.isGCI()) {
+						inclusion_axioms.add(subof);
+					}
+				}
+			}
+			
+			System.out.println("the inclusion axioms size: " + inclusion_axioms.size());
+			//Set<OWLSubClassOfAxiom> inclusion_axioms_no_transitive = new HashSet<>(inclusion_axioms);
+			Set<OWLAxiom> O_axioms = new HashSet<>(O.getAxioms());
+			
+			OWLOntologyManager manager2 = OWLManager.createOWLOntologyManager();
+			OWLDataFactory df = manager2.getOWLDataFactory();
+			//A <= B
+			for(OWLSubClassOfAxiom subof_i: inclusion_axioms) {
+				OWLClassExpression lhs_i = subof_i.getSubClass();
+				OWLClassExpression rhs_i = subof_i.getSuperClass();
+				//get the axioms where B is a subclass
+				if(rhs_i instanceof OWLClass) {
+					Set<OWLSubClassOfAxiom> subofs_j = O.getSubClassAxiomsForSubClass(rhs_i.asOWLClass());
+					//B <= C
+					for(OWLSubClassOfAxiom subof_j: subofs_j) {
+						OWLClassExpression rhs_j = subof_j.getSuperClass();
+						OWLSubClassOfAxiom lhs_i_rhs_j = df.getOWLSubClassOfAxiom(lhs_i, rhs_j);
+						if(inclusion_axioms.contains(lhs_i_rhs_j)) {
+							OWLAxiom lhs_i_rhs_j_ax = (OWLAxiom) lhs_i_rhs_j;
+							O_axioms.remove(lhs_i_rhs_j_ax);
+						}
+					}
+				}
+				
+				
+			}
+			
+			OWLOntologyManager manager3 = OWLManager.createOWLOntologyManager();
+			OWLOntology O_without_transitive_closures = manager3.createOntology();
+			manager3.addAxioms(O_without_transitive_closures, O_axioms);
+			System.out.println("the O_without_transitive_closures axioms size: " + O_without_transitive_closures.getLogicalAxiomCount());
+			System.out.println("the O_without_transitive_closures classes size: " + O_without_transitive_closures.getClassesInSignature().size());
+			System.out.println("the O_without_transitive_closures properties size: " + O_without_transitive_closures.getObjectPropertiesInSignature().size());
+			OutputStream os_onto_witness_1 = new FileOutputStream(filePath + "_no-transitive.owl");
+			manager3.saveOntology(O_without_transitive_closures, new FunctionalSyntaxDocumentFormat(), os_onto_witness_1);
+		}
+	
+	
+	//remove duplicate axioms coming from equivalences
+		public void remove_duplicate_axioms_from_equivalences(String filePath) throws OWLOntologyCreationException, FileNotFoundException, OWLOntologyStorageException {
+			OWLOntologyManager manager1 = OWLManager.createOWLOntologyManager();
+			
+			File file1 = new File(filePath);
+			IRI iri1 = IRI.create(file1);
+			OWLOntology O = manager1.loadOntologyFromOntologyDocument(new IRIDocumentSource(iri1),
+					new OWLOntologyLoaderConfiguration().setLoadAnnotationAxioms(true));
+			
+			
+			System.out.println("the O axioms size: " + O.getLogicalAxiomCount());
+			System.out.println("the O classes size: " + O.getClassesInSignature().size());
+			System.out.println("the O properties size: " + O.getObjectPropertiesInSignature().size());
+			Set<OWLEquivalentClassesAxiom> equiv_axs = new HashSet<>();
+			for(OWLAxiom O_ax: O.getAxioms()) {
+				if(O_ax.isOfType(AxiomType.EQUIVALENT_CLASSES)) {
+					OWLEquivalentClassesAxiom equiv_ax = (OWLEquivalentClassesAxiom) O_ax;
+					equiv_axs.add(equiv_ax);
+				}
+			}
+			Set<OWLAxiom> O_axioms_no_duplicates = new HashSet<>(O.getAxioms());
+			//by assuming that ax_2 is the bigger axiom that contain the conjunct part
+			for(OWLLogicalAxiom ax_1: O.getLogicalAxioms()) {
+				for(OWLLogicalAxiom ax_2: O.getLogicalAxioms()) {
+					if(!ax_1.equals(ax_2)) {
+						if(ax_2 instanceof OWLEquivalentClassesAxiom) {
+							OWLEquivalentClassesAxiom equivaxiom = (OWLEquivalentClassesAxiom) ax_2;
+							if(ax_1 instanceof OWLSubClassOfAxiom) {
+								OWLSubClassOfAxiom subof_1 = (OWLSubClassOfAxiom) ax_1;
+								if(!subof_1.isGCI()) {
+									OWLClassExpression lhs_1 = subof_1.getSubClass();
+									OWLClassExpression rhs_1 = subof_1.getSuperClass();
+									Set<OWLSubClassOfAxiom> subofs_2 = equivaxiom.asOWLSubClassOfAxioms();
+									for(OWLSubClassOfAxiom subof_2: subofs_2) {
+										if(!subof_2.isGCI()) {
+											OWLClassExpression lhs_2 = subof_2.getSubClass();
+											OWLClassExpression rhs_2 = subof_2.getSuperClass();
+											if(lhs_1.equals(lhs_2)) {
+												if(rhs_2.containsConjunct(rhs_1)) {
+													O_axioms_no_duplicates.remove(subof_1);
+												}
+											}
+										}
+									}
+								}
+							}
+						}else if(ax_2 instanceof OWLSubClassOfAxiom) {
+							OWLSubClassOfAxiom subof_2 = (OWLSubClassOfAxiom) ax_2;
+							if(!subof_2.isGCI()) {
+								if(ax_1 instanceof OWLSubClassOfAxiom) {
+									OWLSubClassOfAxiom subof_1 = (OWLSubClassOfAxiom) ax_1;
+									if(!subof_1.isGCI()) {
+										OWLClassExpression lhs_1 = subof_1.getSubClass();
+										OWLClassExpression rhs_1 = subof_1.getSuperClass();
+										OWLClassExpression lhs_2 = subof_2.getSubClass();
+										OWLClassExpression rhs_2 = subof_2.getSuperClass();
+										if(lhs_1.equals(lhs_2)) {
+											if(rhs_2.containsConjunct(rhs_1)) {
+												O_axioms_no_duplicates.remove(subof_1);
+											}
+										}
+										
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			
+			OWLOntologyManager manager3 = OWLManager.createOWLOntologyManager();
+			OWLOntology O_without_duplicates = manager3.createOntology();
+			manager3.addAxioms(O_without_duplicates, O_axioms_no_duplicates);
+			System.out.println("the O_without_duplicates axioms size: " + O_without_duplicates.getLogicalAxiomCount());
+			System.out.println("the O_without_duplicates classes size: " + O_without_duplicates.getClassesInSignature().size());
+			System.out.println("the O_without_duplicates properties size: " + O_without_duplicates.getObjectPropertiesInSignature().size());
+			OutputStream os_onto_witness_1 = new FileOutputStream(filePath + "_no-dup_from_equiv.owl");
+			manager3.saveOntology(O_without_duplicates, new FunctionalSyntaxDocumentFormat(), os_onto_witness_1);
+		
+		}
 	public static void main(String args[]) throws OWLOntologyCreationException, OWLOntologyStorageException, IOException, ClassNotFoundException {
 		System.out.println("--- Computing abstracted defs ---");
 		/*//String filePath1 = args[0];
