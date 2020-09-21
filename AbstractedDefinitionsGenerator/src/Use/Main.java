@@ -465,24 +465,20 @@ public class Main {
 			OWLOntologyManager manager2 = OWLManager.createOWLOntologyManager();
 			OWLDataFactory df = manager2.getOWLDataFactory();
 			//A <= B
+			
 			for(OWLSubClassOfAxiom subof_i: inclusion_axioms) {
 				OWLClassExpression lhs_i = subof_i.getSubClass();
-				OWLClassExpression rhs_i = subof_i.getSuperClass();
-				//get the axioms where B is a subclass
-				if(rhs_i instanceof OWLClass) {
-					Set<OWLSubClassOfAxiom> subofs_j = O.getSubClassAxiomsForSubClass(rhs_i.asOWLClass());
-					//B <= C
-					for(OWLSubClassOfAxiom subof_j: subofs_j) {
-						OWLClassExpression rhs_j = subof_j.getSuperClass();
+				//OWLClassExpression rhs_i = subof_i.getSuperClass();
+				//B <= C
+				for(OWLSubClassOfAxiom subof_j: inclusion_axioms) {
+					//OWLClassExpression lhs_j = subof_j.getSubClass();
+					OWLClassExpression rhs_j = subof_j.getSuperClass();
+					if(!subof_i.equals(subof_j)) {
 						OWLSubClassOfAxiom lhs_i_rhs_j = df.getOWLSubClassOfAxiom(lhs_i, rhs_j);
-						if(inclusion_axioms.contains(lhs_i_rhs_j)) {
-							OWLAxiom lhs_i_rhs_j_ax = (OWLAxiom) lhs_i_rhs_j;
-							O_axioms.remove(lhs_i_rhs_j_ax);
-						}
+						OWLAxiom lhs_i_rhs_j_ax = (OWLAxiom) lhs_i_rhs_j;
+						O_axioms.remove(lhs_i_rhs_j_ax);
 					}
 				}
-				
-				
 			}
 			
 			OWLOntologyManager manager3 = OWLManager.createOWLOntologyManager();
@@ -491,7 +487,7 @@ public class Main {
 			System.out.println("the O_without_transitive_closures axioms size: " + O_without_transitive_closures.getLogicalAxiomCount());
 			System.out.println("the O_without_transitive_closures classes size: " + O_without_transitive_closures.getClassesInSignature().size());
 			System.out.println("the O_without_transitive_closures properties size: " + O_without_transitive_closures.getObjectPropertiesInSignature().size());
-			OutputStream os_onto_witness_1 = new FileOutputStream(filePath + "_no-transitive.owl");
+			OutputStream os_onto_witness_1 = new FileOutputStream(filePath + "_no-transitive_2.owl");
 			manager3.saveOntology(O_without_transitive_closures, new FunctionalSyntaxDocumentFormat(), os_onto_witness_1);
 		}
 	
