@@ -275,7 +275,7 @@ public class Main {
        	}
         
         //System.out.println("the set sigma_plus_class_vertices: " + sigma_plus_class_vertices);
-        
+        System.out.println(" --Generating completion axioms-- ");
         for(Vertex cl_vertex_1: sigma_plus_class_vertices) {
    			//System.out.println("the current cl_vertex_1: " + cl_vertex_1);
    			for(Vertex cl_vertex_2: sigma_plus_class_vertices) {
@@ -288,10 +288,34 @@ public class Main {
    						OWLClass cl_2 = toOWL.getOwlClassFromVertex(cl_vertex_2);
    						rhs_conjunct.add(cl_2);
    						OWLSubClassOfAxiom subof = toOWL.getOWLSubClassOf(cl_1, rhs_conjunct);
+   						if(isTransitive(subof, inclusion_axioms)) {
+   							System.out.println("the axiom is transitive");}
+   						else {
    						inclusion_axioms.add(subof);
+   						}
    					}
    				}
    			}
+   		}
+        
+      //remove trasnitive closure axioms from the set inclusion_axioms
+   		OWLDataFactory df = manager1.getOWLDataFactory();
+   		Set<OWLSubClassOfAxiom> inclusion_axioms_no_transitive = new HashSet<>(inclusion_axioms);
+   		for(OWLSubClassOfAxiom subof_ax_1: inclusion_axioms) {
+   			OWLClassExpression lhs_1 = subof_ax_1.getSubClass();
+   			OWLClassExpression rhs_1 = subof_ax_1.getSuperClass();
+   			
+   			for(OWLSubClassOfAxiom subof_ax_2: inclusion_axioms) {
+   				if(!subof_ax_1.equals(subof_ax_2)) {
+   					OWLClassExpression lhs_2 = subof_ax_2.getSubClass();
+   					OWLClassExpression rhs_2 = subof_ax_2.getSuperClass();
+   					OWLSubClassOfAxiom lhs_1_rhs_2 = df.getOWLSubClassOfAxiom(lhs_1, rhs_2);
+   					if(inclusion_axioms.contains(lhs_1_rhs_2)) {
+   						inclusion_axioms_no_transitive.remove(lhs_1_rhs_2);
+   					}
+   				}
+   			}
+   			
    		}
         
         //System.out.println("the current sigma_plus_property_vertices: " + sigma_plus_property_vertices);
@@ -307,8 +331,32 @@ public class Main {
    			}
    		}
         
+      //remove transitive closure axioms from property_inclusion_axioms
+   		Set<OWLSubObjectPropertyOfAxiom> property_inclusion_axioms_no_transitive = new HashSet<>(property_inclusion_axioms);
+   		
+   		for(OWLSubObjectPropertyOfAxiom sub_pr_of_ax_1: property_inclusion_axioms) {
+   			OWLObjectPropertyExpression lhs_1 = sub_pr_of_ax_1.getSubProperty();
+   			OWLObjectPropertyExpression rhs_1 = sub_pr_of_ax_1.getSuperProperty();
+   			
+   			for(OWLSubObjectPropertyOfAxiom sub_pr_of_ax_2: property_inclusion_axioms) {
+   				if(!sub_pr_of_ax_1.equals(sub_pr_of_ax_2)) {
+   					OWLObjectPropertyExpression lhs_2 = sub_pr_of_ax_2.getSubProperty();
+   		   			OWLObjectPropertyExpression rhs_2 = sub_pr_of_ax_2.getSuperProperty();
+   					OWLSubObjectPropertyOfAxiom lhs_1_rhs_2 = df.getOWLSubObjectPropertyOfAxiom(lhs_1, rhs_2);
+   					if(property_inclusion_axioms.contains(lhs_1_rhs_2)) {
+   						property_inclusion_axioms_no_transitive.remove(lhs_1_rhs_2);
+   					}
+   				}
+   			}
+   			
+   		}
+   		
+   		Set<OWLAxiom> inclusions_and_equivs = new HashSet<>();
+   		inclusions_and_equivs.addAll(inclusion_axioms_no_transitive);
+   		inclusions_and_equivs.addAll(abstracted_definitions);
+   		Set<OWLAxiom> inclusions_and_equivs_no_redundant = new HashSet<>(inclusions_and_equivs);
       //remove redundant inclusion axioms
-   		Set<OWLSubClassOfAxiom> no_redundant_inclusion_axioms = new HashSet<>(inclusion_axioms);
+   		/*Set<OWLSubClassOfAxiom> no_redundant_inclusion_axioms = new HashSet<>(inclusion_axioms);
    		for(OWLSubClassOfAxiom subof_1: inclusion_axioms) {
    			OWLClassExpression lhs_1 = subof_1.getSubClass();
    			OWLClassExpression rhs_1 = subof_1.getSuperClass();
@@ -324,16 +372,113 @@ public class Main {
    				}
    			}
    		}
-        
+        */
+   		
+   		for(OWLAxiom ax_1: inclusions_and_equivs) {
+   			for(OWLAxiom ax_2: inclusions_and_equivs) {
+   				if(ax_1 instanceof OWLEquivalentClassesAxiom) {
+   					System.out.println("The current ax_1: " + ax_1);
+   					OWLEquivalentClassesAxiom equiv_ax_1 = (OWLEquivalentClassesAxiom) ax_1;
+   					if(ax_2 instanceof OWLSubClassOfAxiom) {
+   						System.out.println("The current ax_2: " + ax_2);
+   					OWLSubClassOfAxiom subof_ax_2 = (OWLSubClassOfAxiom) ax_2;
+   					Set<OWLSubClassOfAxiom> ax_1_subs = equiv_ax_1.asOWLSubClassOfAxioms();
+   					for(OWLSubClassOfAxiom ax_1_sub: ax_1_subs) {
+   						if(!ax_1_sub.isGCI()) {
+   							if(!ax_1_sub.equals(subof_ax_2)) {
+   								System.out.println("the current ax_1_sub: " + ax_1_sub);
+   							OWLClassExpression lhs_1 = ax_1_sub.getSubClass();
+   							OWLClassExpression rhs_1 = ax_1_sub.getSuperClass();
+   							OWLClassExpression lhs_2 = subof_ax_2.getSubClass();
+   			   				OWLClassExpression rhs_2 = subof_ax_2.getSuperClass();
+   			   			if(!ax_1_sub.equals(subof_ax_2)) {
+   		   					if(lhs_1.equals(lhs_2)) {
+   		   						if(rhs_1.containsConjunct(rhs_2)) {
+   		   							System.out.println("The current axiom will be removed: " + subof_ax_2);
+   		   							inclusions_and_equivs_no_redundant.remove(subof_ax_2);
+   		   							}
+   		   						}
+   		   					}
+   							}
+   						}
+   						}
+   					}
+   				}
+   				
+   				if(ax_1 instanceof OWLSubClassOfAxiom) {
+   					System.out.println("The current ax_1 (subof): " + ax_1);
+   					OWLSubClassOfAxiom subof_ax_1 = (OWLSubClassOfAxiom) ax_1;
+   					if(ax_2 instanceof OWLEquivalentClassesAxiom) {
+   						System.out.println("The current ax_2: (equiv) " + ax_2);
+   						OWLEquivalentClassesAxiom equiv_ax_2 = (OWLEquivalentClassesAxiom) ax_2;
+   						Set<OWLSubClassOfAxiom> ax_2_subs = equiv_ax_2.asOWLSubClassOfAxioms();
+   						for(OWLSubClassOfAxiom ax_2_sub: ax_2_subs) {
+   							if(!ax_2_sub.isGCI()) {
+   								if(!ax_2_sub.equals(subof_ax_1)) {
+   								System.out.println("the current ax_2_sub: " + ax_2_sub);
+   							OWLClassExpression lhs_2 = ax_2_sub.getSubClass();
+   							OWLClassExpression rhs_2 = ax_2_sub.getSuperClass();
+   							OWLClassExpression lhs_1 = subof_ax_1.getSubClass();
+   			   				OWLClassExpression rhs_1 = subof_ax_1.getSuperClass();
+   			   			if(!ax_2_sub.equals(subof_ax_1)) {
+   		   					if(lhs_1.equals(lhs_2)) {
+   		   						if(rhs_2.containsConjunct(rhs_1)) {
+   		   							System.out.println("The current axiom will be removed: " + subof_ax_1);
+   		   							inclusions_and_equivs_no_redundant.remove(subof_ax_1);
+   		   							}
+   		   						}
+   		   					}
+   							}
+   						}
+   						}
+   					}
+   				}
+   				
+   				if(ax_1 instanceof OWLSubClassOfAxiom) {
+   					System.out.println("The current ax_1 (subof): " + ax_1);
+   					if(ax_2 instanceof OWLSubClassOfAxiom) {
+   						if(!ax_1.equals(ax_2)) {
+   						System.out.println("The current ax_2: (subof) " + ax_2);
+   						OWLSubClassOfAxiom subof_ax_1 = (OWLSubClassOfAxiom) ax_1;
+   	   					OWLSubClassOfAxiom subof_ax_2 = (OWLSubClassOfAxiom) ax_2;
+   	   					OWLClassExpression lhs_1 = subof_ax_1.getSubClass();
+   	   					OWLClassExpression rhs_1 = subof_ax_1.getSuperClass();
+   	   					OWLClassExpression lhs_2 = subof_ax_2.getSubClass();
+   	   					OWLClassExpression rhs_2 = subof_ax_2.getSuperClass();
+   	   					if(lhs_1.equals(lhs_2)) {
+   	   						if(rhs_2.containsConjunct(rhs_1)) {
+   	   							System.out.println("The current axiom will be removed: " + subof_ax_1);
+   	   							inclusions_and_equivs_no_redundant.remove(subof_ax_1);
+   	   						}
+   	   					}
+   					}
+   					}
+   				}
+   			}
+   		}
        
         
        	long endTime21 = System.currentTimeMillis();
        	System.out.println("Total Definitions Extraction Duration = " + (endTime21 - startTime21) + " millis");
        	
+       	
+       	Set<OWLSubClassOfAxiom> inclusions_and_equivs_no_redundant_subofs = new HashSet<>();
+   		for(OWLAxiom axiom: inclusions_and_equivs_no_redundant) {
+   			if(axiom.isOfType(AxiomType.SUBCLASS_OF)) {
+   				OWLSubClassOfAxiom subof_ax = (OWLSubClassOfAxiom) axiom;
+   				inclusions_and_equivs_no_redundant_subofs.add(subof_ax);
+   			}
+   		}
+   		
+   		
+   		System.out.println("The size of inclusion_axioms: " + inclusion_axioms.size());
+   		System.out.println("The size of inclusions_and_equivs_no_redundant: " + inclusions_and_equivs_no_redundant.size());
+   		
+   		
         System.out.println("size of abstracted_definitions: " + abstracted_definitions.size());
         System.out.println("size of inclusion_axioms: "+ inclusion_axioms);
-        System.out.println("size of no_redundant_inclusion_axioms: "+ no_redundant_inclusion_axioms);
-        System.out.println("size of property_inclusion_axioms: "+ property_inclusion_axioms);
+        System.out.println("size of inclusions_and_equivs_no_redundant_subofs: "+ inclusions_and_equivs_no_redundant_subofs);
+        System.out.println("size of property_inclusion_axioms_no_transitive: "+ property_inclusion_axioms_no_transitive);
         
         Set<OWLEquivalentClassesAxiom> entailed_abstracted_definitions = new HashSet<>();
         Set<OWLSubClassOfAxiom> entailed_inclusion_axioms = new HashSet<>();
@@ -348,7 +493,7 @@ public class Main {
         		}
         }
         
-        for(OWLSubClassOfAxiom subof_ax: no_redundant_inclusion_axioms) {
+        for(OWLSubClassOfAxiom subof_ax: inclusions_and_equivs_no_redundant_subofs) {
         	System.out.println("the current subof_ax is: " + subof_ax);
         		if(checkEntailement(subof_ax, O)) {
         		//if(checkEntailement(abstract_def, module_1)) {
@@ -356,7 +501,7 @@ public class Main {
         		}
         }
         
-        for(OWLSubObjectPropertyOfAxiom property_ax: property_inclusion_axioms) {
+        for(OWLSubObjectPropertyOfAxiom property_ax: property_inclusion_axioms_no_transitive) {
         	System.out.println("the current property_ax is: " + property_ax);
         	if(checkEntailement(property_ax, O)) {
         		//if(checkEntailement(abstract_def, module_1)) {
@@ -575,6 +720,30 @@ public class Main {
 			OutputStream os_onto_witness_1 = new FileOutputStream(filePath + "_no-dup_from_equiv.owl");
 			manager3.saveOntology(O_without_duplicates, new FunctionalSyntaxDocumentFormat(), os_onto_witness_1);
 		
+		}
+		
+		public boolean isTransitive(OWLSubClassOfAxiom subof,  Set<OWLSubClassOfAxiom> inclusion_axioms) {
+			//assum that subof: A <= C
+			OWLClassExpression lhs_tr = subof.getSubClass();
+			OWLClassExpression rhs_tr = subof.getSuperClass();
+			//go through inclusion axioms: check if current one is A <= B, then in another loop: check if B <= C
+			for(OWLSubClassOfAxiom subof_ax_1: inclusion_axioms) {
+				OWLClassExpression lhs_1 = subof_ax_1.getSubClass();
+				OWLClassExpression rhs_1 = subof_ax_1.getSuperClass();
+				
+				for(OWLSubClassOfAxiom subof_ax_2: inclusion_axioms) {
+					if(!subof_ax_1.equals(subof_ax_2)) {
+						OWLClassExpression lhs_2 = subof_ax_2.getSubClass();
+						OWLClassExpression rhs_2 = subof_ax_2.getSuperClass();
+						if(lhs_tr.equals(lhs_1) && rhs_tr.equals(rhs_2)) {
+							return true;
+						}
+					}
+				}
+				
+			}
+			return false;
+			
 		}
 	public static void main(String args[]) throws OWLOntologyCreationException, OWLOntologyStorageException, IOException, ClassNotFoundException {
 		System.out.println("--- Computing abstracted defs ---");
