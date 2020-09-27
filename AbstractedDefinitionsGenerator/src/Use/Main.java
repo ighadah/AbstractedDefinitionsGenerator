@@ -299,11 +299,7 @@ public class Main {
    						OWLClass cl_2 = toOWL.getOwlClassFromVertex(cl_vertex_2);
    						rhs_conjunct.add(cl_2);
    						OWLSubClassOfAxiom subof = toOWL.getOWLSubClassOf(cl_1, rhs_conjunct);
-   						if(isTransitive(subof, inclusion_axioms)) {
-   							System.out.println("the axiom is transitive");}
-   						else {
    						inclusion_axioms.add(subof);
-   						}
    					}
    				}
    			}
@@ -530,9 +526,108 @@ public class Main {
         manager5.addAxioms(ontology_abstract_def, entailed_inclusion_axioms);
         manager5.addAxioms(ontology_abstract_def, entailed_property_inclusion_axioms);
         
-        System.out.println("the ontology_abstract_def axioms: " + ontology_abstract_def.getLogicalAxioms());
-        OutputStream os_onto_witness_1 = new FileOutputStream(sig_file + "-abstract_def_04-2017.owl");
-		manager5.saveOntology(ontology_abstract_def, new FunctionalSyntaxDocumentFormat(), os_onto_witness_1);
+        //A post process step to remove transitive closure axioms from all the axioms in ontology_abstract_def for cases such as: A == B1 and C, B1 <= B2, A <= B2 (remove A <= B2)
+        Set<OWLAxiom> ontology_abstract_def_axs_no_transitive = new HashSet<>(ontology_abstract_def.getAxioms());
+        for(OWLAxiom ax_1: ontology_abstract_def.getAxioms()) {
+        		if(ax_1 instanceof OWLEquivalentClassesAxiom) {
+        			OWLEquivalentClassesAxiom equiv_ax = (OWLEquivalentClassesAxiom) ax_1;
+        			Set<OWLSubClassOfAxiom> equiv_ax_subofs = equiv_ax.asOWLSubClassOfAxioms();
+        			for(OWLSubClassOfAxiom subof_eq_1: equiv_ax_subofs) {
+        				if(!subof_eq_1.isGCI()) {
+        					OWLClassExpression lhs_1 = subof_eq_1.getSubClass();
+        					OWLClassExpression rhs_1 = subof_eq_1.getSuperClass();
+        					if(rhs_1 instanceof OWLObjectIntersectionOf) {
+        						Set<OWLClassExpression> rhs_1_conjuncts = rhs_1.asConjunctSet();
+        						for(OWLClassExpression rhs_1_conjunct: rhs_1_conjuncts) {
+        							if(rhs_1_conjunct instanceof OWLClass) {
+        								Set<OWLSubClassOfAxiom> subofs_2 = ontology_abstract_def.getSubClassAxiomsForSubClass(rhs_1_conjunct.asOWLClass());
+        								for(OWLSubClassOfAxiom subof_2: subofs_2) {
+        									OWLClassExpression lhs_2 = subof_2.getSubClass();
+        									OWLClassExpression rhs_2 = subof_2.getSuperClass();
+        									if(rhs_2 instanceof OWLObjectIntersectionOf) {
+        										//the trasnitivity will occur whichever the type of rhs_2 is so for every conjunct of rhs_2 check if the axiom lhs_1, rhs_2_conjunct exist!
+        										Set<OWLClassExpression> rhs_2_conjuncts = rhs_2.asConjunctSet();
+        										for(OWLClassExpression rhs_2_conjuct: rhs_2_conjuncts) {
+        											OWLSubClassOfAxiom lhs_1_rhs_2 = df.getOWLSubClassOfAxiom(lhs_1, rhs_2_conjuct);
+                									if(ontology_abstract_def.getLogicalAxioms().contains(lhs_1_rhs_2)) {
+                										ontology_abstract_def_axs_no_transitive.remove(lhs_1_rhs_2);
+                									}
+        										}
+        									}
+        									if(rhs_2 instanceof OWLClass) {
+        									OWLSubClassOfAxiom lhs_1_rhs_2 = df.getOWLSubClassOfAxiom(lhs_1, rhs_2);
+        									if(ontology_abstract_def.getLogicalAxioms().contains(lhs_1_rhs_2)) {
+        										ontology_abstract_def_axs_no_transitive.remove(lhs_1_rhs_2);
+        									}
+        									}
+        								}
+        							}
+        						}
+        					}else if(rhs_1 instanceof OWLClass) {
+        						Set<OWLSubClassOfAxiom> subofs_2 = ontology_abstract_def.getSubClassAxiomsForSubClass(rhs_1.asOWLClass());
+        						for(OWLSubClassOfAxiom subof_2: subofs_2) {
+        							OWLClassExpression lhs_2 = subof_2.getSubClass();
+								OWLClassExpression rhs_2 = subof_2.getSuperClass();
+								OWLSubClassOfAxiom lhs_1_rhs_2 = df.getOWLSubClassOfAxiom(lhs_1, rhs_2);
+								if(ontology_abstract_def.getLogicalAxioms().contains(lhs_1_rhs_2)) {
+									ontology_abstract_def_axs_no_transitive.remove(lhs_1_rhs_2);
+								}
+        						}
+        					}
+        				}
+        			} 
+        		}
+        		if(ax_1 instanceof OWLSubClassOfAxiom) {
+        			OWLSubClassOfAxiom subof_1 = (OWLSubClassOfAxiom) ax_1;
+        			OWLClassExpression lhs_1 = subof_1.getSubClass();
+				OWLClassExpression rhs_1 = subof_1.getSuperClass();
+				if(rhs_1 instanceof OWLObjectIntersectionOf) {
+					Set<OWLClassExpression> rhs_1_conjuncts = rhs_1.asConjunctSet();
+					for(OWLClassExpression rhs_1_conjunct: rhs_1_conjuncts) {
+						if(rhs_1_conjunct instanceof OWLClass) {
+							Set<OWLSubClassOfAxiom> subofs_2 = ontology_abstract_def.getSubClassAxiomsForSubClass(rhs_1_conjunct.asOWLClass());
+							for(OWLSubClassOfAxiom subof_2: subofs_2) {
+								OWLClassExpression lhs_2 = subof_2.getSubClass();
+								OWLClassExpression rhs_2 = subof_2.getSuperClass();
+								if(rhs_2 instanceof OWLObjectIntersectionOf) {
+									//the trasnitivity will occur whichever the type of rhs_2 is so for every conjunct of rhs_2 check if the axiom lhs_1, rhs_2_conjunct exist!
+									Set<OWLClassExpression> rhs_2_conjuncts = rhs_2.asConjunctSet();
+									for(OWLClassExpression rhs_2_conjuct: rhs_2_conjuncts) {
+										OWLSubClassOfAxiom lhs_1_rhs_2 = df.getOWLSubClassOfAxiom(lhs_1, rhs_2_conjuct);
+    									if(ontology_abstract_def.getLogicalAxioms().contains(lhs_1_rhs_2)) {
+    										ontology_abstract_def_axs_no_transitive.remove(lhs_1_rhs_2);
+    									}
+									}
+								}
+								if(rhs_2 instanceof OWLClass) {
+								OWLSubClassOfAxiom lhs_1_rhs_2 = df.getOWLSubClassOfAxiom(lhs_1, rhs_2);
+								if(ontology_abstract_def.getLogicalAxioms().contains(lhs_1_rhs_2)) {
+									ontology_abstract_def_axs_no_transitive.remove(lhs_1_rhs_2);
+								}
+								}
+							}
+						}
+					}
+				}else if(rhs_1 instanceof OWLClass) {
+					Set<OWLSubClassOfAxiom> subofs_2 = ontology_abstract_def.getSubClassAxiomsForSubClass(rhs_1.asOWLClass());
+					for(OWLSubClassOfAxiom subof_2: subofs_2) {
+						OWLClassExpression lhs_2 = subof_2.getSubClass();
+					OWLClassExpression rhs_2 = subof_2.getSuperClass();
+					OWLSubClassOfAxiom lhs_1_rhs_2 = df.getOWLSubClassOfAxiom(lhs_1, rhs_2);
+					if(ontology_abstract_def.getLogicalAxioms().contains(lhs_1_rhs_2)) {
+						ontology_abstract_def_axs_no_transitive.remove(lhs_1_rhs_2);
+					}
+					}
+				}
+        		}
+        }
+        OWLOntology ontology_abstract_def_no_transitive = manager5.createOntology();
+        manager5.addAxioms(ontology_abstract_def_no_transitive, ontology_abstract_def_axs_no_transitive);
+        System.out.println("the ontology_abstract_def: " + ontology_abstract_def.getLogicalAxiomCount());
+        System.out.println("the ontology_abstract_def_no_transitive: " + ontology_abstract_def_no_transitive.getLogicalAxiomCount());
+        
+        OutputStream os_onto_witness_1 = new FileOutputStream(module_file + "-abstract_def-05-ERA-small-d-c-no-trs-2.owl");
+		manager5.saveOntology(ontology_abstract_def_no_transitive, new FunctionalSyntaxDocumentFormat(), os_onto_witness_1);
         }
 	
 	
