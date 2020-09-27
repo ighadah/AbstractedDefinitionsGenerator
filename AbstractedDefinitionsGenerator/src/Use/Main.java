@@ -162,7 +162,14 @@ public class Main {
 			list_role_edges.add(toGraph.AxiomConverter_RoleInclusions(transitive_roles_exps, axiom));
 		}
         
-        graph.setRoleEdges(list_role_edges);
+        
+        List<Edge> list_role_edges_clean = new ArrayList<>(list_role_edges);
+   		for(Edge edge: list_role_edges) {
+   			if(edge == null) {
+   				list_role_edges_clean.remove(edge);
+   			}
+   		}
+   		graph.setRoleEdges(list_role_edges_clean);
         BFS bfs = new BFS(graph);
         
         Set<Vertex> sigma_plus_vertices = new HashSet<>();
@@ -196,6 +203,7 @@ public class Main {
         							if(!conjuncts.isEmpty()) {
         								abstracted_definitions.add(OWCA);
         								sigma_plus_class_vertices.addAll(graph.getProximalPrimitiveVertices());
+        								sigma_plus_class_vertices.add(graph.getVertexLhs());
         	        						sigma_plus_vertices.addAll(graph.getExistentialVerticesNoRedundancies());
         							}
         						}
@@ -216,6 +224,7 @@ public class Main {
         	   						OWLClassExpression rhs = subof.getSuperClass();
         	   						sigma_plus_class_vertices.addAll(toGraph.getClassVerticesInSignatureInRHSExpression(rhs));
         	   						sigma_plus_property_vertices.addAll(toGraph.getPropertyVerticesInSignatureInRHSExpression(rhs));
+        	   						sigma_plus_class_vertices.add(NDV);
         	   						}
         	   					}
         	       			}
@@ -223,11 +232,12 @@ public class Main {
         			//GET THE ROLE AXIOM FOR THE ROLE IN SIGMA
         			if(en.isOWLObjectProperty()) {
         				NDef_Vertex NPV = toGraph.getVertexFromProperty(en.asOWLObjectProperty());
-        				//Set<OWLSubObjectPropertyOfAxiom> owl_sub_property = O.getObjectSubPropertyAxiomsForSubProperty(en.asOWLObjectProperty());
+        				Set<OWLSubObjectPropertyOfAxiom> owl_sub_property = O.getObjectSubPropertyAxiomsForSubProperty(en.asOWLObjectProperty());
         				graph.setVertexLhs(NPV);
         				//instead of using  bfs, use the role edges?
         				//assuming that the gotten npv is the destination? (the child), we will get its parent (the source from the role edges)
-        				for(Edge edge: list_role_edges) {
+        				if(!owl_sub_property.isEmpty()) {
+        				for(Edge edge: list_role_edges_clean) {
         					//get from edge the parent?
         					//check if the current edge child vertex (destination is equal to the current entity)
         					
@@ -238,10 +248,11 @@ public class Main {
         	   					String property_vertex2_name = edge_destination.toString();
         						OWLSubObjectPropertyOfAxiom owl_sub_property_axiom = bfs.getOWLSubProperty(property_vertex1_name, property_vertex2_name);
         						property_inclusion_axioms.add(owl_sub_property_axiom);
-        						sigma_plus_vertices.add(edge_source);
         						sigma_plus_property_vertices.add(edge_source);
+        						sigma_plus_property_vertices.add(edge_destination);
         					}
         					
+        				}
         				}
         			}
         }
