@@ -111,25 +111,24 @@ public class ToGraph {
 		return concept_list;
 	}
 	
-	//get concepts in RHS and convert to List of vertices
-		public List<Vertex> getClassVerticesInSignatureInRHSExpression(OWLClassExpression rhs){
-			List<Vertex> vertices_list = new ArrayList<>();
-			Set<OWLClass> class_set = rhs.getClassesInSignature();
-			for(OWLClass owlClass: class_set) {
-				vertices_list.add(getVertexFromClass(owlClass));
-			}
-			
-			return vertices_list;
+	public List<Vertex> getClassVerticesInSignatureInExpression(OWLClassExpression exp){
+		List<Vertex> vertices_list = new ArrayList<>();
+		Set<OWLClass> class_set = exp.getClassesInSignature();
+		for(OWLClass owlClass: class_set) {
+			vertices_list.add(getVertexFromClass(owlClass));
 		}
-		public List<Vertex> getPropertyVerticesInSignatureInRHSExpression(OWLClassExpression rhs){
-			List<Vertex> vertices_list = new ArrayList<>();
-			Set<OWLObjectProperty> property_set = rhs.getObjectPropertiesInSignature();
-			for(OWLObjectProperty owlProperty: property_set) {
-				vertices_list.add(getVertexFromProperty(owlProperty));
-			}
-			
-			return vertices_list;
+		
+		return vertices_list;
+	}
+	public List<Vertex> getPropertyVerticesInSignatureInExpression(OWLClassExpression exp){
+		List<Vertex> vertices_list = new ArrayList<>();
+		Set<OWLObjectProperty> property_set = exp.getObjectPropertiesInSignature();
+		for(OWLObjectProperty owlProperty: property_set) {
+			vertices_list.add(getVertexFromProperty(owlProperty));
 		}
+		
+		return vertices_list;
+	}
 	
 	//getEdgeFromIs?
 	//from AxiomConverter 

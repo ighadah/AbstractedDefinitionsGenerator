@@ -42,7 +42,34 @@ public class BFS{
 	Boolean endTherecursion = false;
 	//change the name of this method BFS_adjmap_4
 	
-	
+	public OWLSubClassOfAxiom get_abstract_inclusion() {
+		
+		Map<Vertex, List<Vertex>> adjacency_list_map = graph.getAdjListMap();
+		//System.out.println("adjacency_list_map " + adjacency_list_map);
+		Vertex starting_vertex = graph.getVertexLhs();
+		
+		BFS_1(starting_vertex, adjacency_list_map);
+		//BFS_1_e(starting_vertex, adjacency_list_map);
+		List<Vertex> primitive_vertices = graph.getPrimitiveVertices();
+		System.out.println("(result of BFS_1) the current primitive_vertices: " + primitive_vertices);
+		List<Vertex> existential_vertices = graph.getExistentialVertices();
+		System.out.println("(result of BFS_1) the current existential_vertices: " + existential_vertices);
+        List<Vertex> primitive_concepts_no_redundancies = BFS_2_primitive_vertices(primitive_vertices, adjacency_list_map);
+        System.out.println("(result of BFS_2) primitive_concepts_no_redundancies: " + primitive_concepts_no_redundancies);
+        //set
+        graph.setProximalPrimitiveVertices(primitive_concepts_no_redundancies);
+		List<Vertex> exist_restrictions_no_redundancies = remove_redundant_exist_restrictions(existential_vertices, adjacency_list_map);
+		System.out.println("(result of BFS_2) exist_restrictions_no_redundancies: " + exist_restrictions_no_redundancies);
+		//set
+		graph.setExistentialVerticesNoRedundancies(exist_restrictions_no_redundancies);
+		List<Vertex> rhs_vertices = new ArrayList<>();
+		rhs_vertices.addAll(primitive_concepts_no_redundancies);
+		rhs_vertices.addAll(exist_restrictions_no_redundancies);
+		return getOWLSubClassOfAxiom(starting_vertex, rhs_vertices);
+		
+		}
+
+
 	public OWLEquivalentClassesAxiom get_abstract_def() {
 		
 		Map<Vertex, List<Vertex>> adjacency_list_map = graph.getAdjListMap();
