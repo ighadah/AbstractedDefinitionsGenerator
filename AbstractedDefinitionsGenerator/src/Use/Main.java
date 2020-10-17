@@ -63,11 +63,11 @@ public class Main {
 	//Graph graph = new Graph();
 	Graph graph = new Graph();
 	
-	
-	public void useBFS_get_defined_sig(String sig_file, String module_file) throws OWLOntologyCreationException, IOException, ClassNotFoundException, OWLOntologyStorageException {
+	//the second file was module_file
+	public void useBFS_get_defined_sig(String sig_file, String O_file) throws OWLOntologyCreationException, IOException, ClassNotFoundException, OWLOntologyStorageException {
 		PrintStream out;
 		try {
-			out = new PrintStream(new FileOutputStream(module_file + "-useBFS-output-stream-07-10-10-2020-sct2020.txt"));
+			out = new PrintStream(new FileOutputStream(O_file + "-useBFS-output-stream-07-10-10-2020-sct2020.txt"));
 			System.setOut(out);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -88,7 +88,7 @@ public class Main {
 		
 		
 		OWLOntologyManager manager2 = OWLManager.createOWLOntologyManager();
-		File file2 = new File(module_file);
+		File file2 = new File(O_file);
 		IRI iri2 = IRI.create(file2);
 		OWLOntology O = manager2.loadOntologyFromOntologyDocument(new IRIDocumentSource(iri2),
 				new OWLOntologyLoaderConfiguration().setLoadAnnotationAxioms(true));
@@ -101,17 +101,36 @@ public class Main {
 		
 		//OWLOntology module = extract_module(sig_file, o_file);
 		//Extract the star module for the defined sig concepts
-		Set<OWLEntity> defined_cls = new HashSet<>();
-		for(OWLClass cl: sig_O.getClassesInSignature()) {
-			if(isDefined(cl, O)) {
-				defined_cls.add(cl);					
+		Set<OWLEntity> module_sig = new HashSet<>();
+		for(OWLEntity en: sig_O.getSignature()) {
+			//if(isDefined(cl, O)) {
+			if(en.toString().equals("<http://snomed.info/id/90688005>") 
+   					|| 
+   					en.toString().equals("<http://snomed.info/id/42399005>") 
+   					|| 
+   					en.toString().equals("<http://snomed.info/id/14669001>") 
+   					|| 
+   					//en.toString().contains("236423003")
+   					//|| 
+   					en.toString().equals("<http://snomed.info/id/302233006>") 
+   					|| 
+   					en.toString().equals("<http://snomed.info/id/51292008>")
+   					|| 
+   					en.toString().equals("<http://snomed.info/id/840580004>")
+   					//en.toString().equals("<http://snomed.info/id/64572001>")
+   					//|| 
+   					//en.toString().equals("<http://snomed.info/id/404684003>")
+   					) {
+				module_sig.add(en);		
 			}
+			//}
 		}
-		System.out.println("the size of defined_cls is: " + defined_cls.size());
+		System.out.println("the size of defined_cls is: " + module_sig.size());
 		OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
 		SyntacticLocalityModuleExtractor sme_original = new SyntacticLocalityModuleExtractor(manager,
 				O, uk.ac.manchester.cs.owlapi.modularity.ModuleType.STAR);
-		OWLOntology module_1 = sme_original.extractAsOntology(defined_cls, IRI.generateDocumentIRI());
+		
+		OWLOntology module_1 = sme_original.extractAsOntology(module_sig, IRI.generateDocumentIRI());
 		
 		//save the module
 		System.out.println("the module_1 axioms size: " + module_1.getLogicalAxiomCount());
@@ -186,18 +205,24 @@ public class Main {
         long startTime21 = System.currentTimeMillis();
      	for(OWLEntity en: O.getSignature()) {
        		if(en.isOWLClass()) {
+       			//Chronic renal failure syndrome (disorder)
        			if(en.toString().equals("<http://snomed.info/id/90688005>") 
        					|| 
+       					//Renal failure syndrome (disorder)
        					en.toString().equals("<http://snomed.info/id/42399005>") 
        					|| 
+       					//Acute renal failure syndrome (disorder)
        					en.toString().equals("<http://snomed.info/id/14669001>") 
        					|| 
        					//en.toString().contains("236423003")
        					//|| 
+       					//Renal artery stenosis (disorder)
        					en.toString().equals("<http://snomed.info/id/302233006>") 
        					|| 
+       					//Hepatorenal syndrome (disorder)
        					en.toString().equals("<http://snomed.info/id/51292008>")
        					|| 
+       					//Peripheral arterial disease (disorder)
        					en.toString().equals("<http://snomed.info/id/840580004>")
        					//en.toString().equals("<http://snomed.info/id/64572001>")
        					//|| 
@@ -823,7 +848,7 @@ public class Main {
 		
 		
 		
-        OutputStream os_onto_witness_1 = new FileOutputStream(module_file + "-abstract_def-07-10-10-2020-sct2020.owl");
+        OutputStream os_onto_witness_1 = new FileOutputStream(O_file + "-abstract_def-07-10-10-2020-sct2020.owl");
 		manager5.saveOntology(ontology_abstract_def_no_transitive, new FunctionalSyntaxDocumentFormat(), os_onto_witness_1);
 		
 		
